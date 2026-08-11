@@ -263,7 +263,7 @@ module RailsuiCharts
             stops: [0, 100]
           }
         }
-      when :bar, :column
+      when :bar, :column, :pie, :donut, :polar_area
         { opacity: 1 }
       else
         { opacity: 0 }
