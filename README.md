@@ -191,6 +191,8 @@ Colors are controlled by CSS variables. Override them in your Tailwind CSS or cu
   --rui-chart-muted: #94a3b8;
   --rui-chart-grid: rgba(148, 163, 184, 0.18);
   --rui-chart-text: #64748b;
+  --rui-chart-metric-label: #6b7280;
+  --rui-chart-metric-value: #111827;
 }
 ```
 
