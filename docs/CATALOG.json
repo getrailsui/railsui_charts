@@ -26,8 +26,12 @@
       "examples": [
         "railsui_chart @daily_signups, type: :line",
         "railsui_chart @monthly_revenue, type: :area, label: 'Revenue'",
+        "railsui_chart @plans, type: :column, label: 'Customers'",
         "railsui_chart @plans, type: :bar, label: 'Customers'",
-        "railsui_chart @page_views, type: :sparkline"
+        "railsui_chart @page_views, type: :sparkline",
+        "railsui_chart @distribution, type: :pie",
+        "railsui_chart @distribution, type: :donut",
+        "railsui_chart @experiments, type: :scatter"
       ]
     },
     {

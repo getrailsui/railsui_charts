@@ -38,8 +38,57 @@ class ApexOptionsBuilderTest < Minitest::Test
 
   def test_rejects_unsupported_type
     assert_raises(ArgumentError) do
-      RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :pie)
+      RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :radar)
     end
+  end
+
+  def test_builds_column_chart_options
+    data = [{ x: "Jan", y: 10 }, { x: "Feb", y: 20 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :column)
+    config = builder.build
+
+    assert_equal "bar", config[:chart][:type]
+    assert_equal false, config[:plotOptions][:bar][:horizontal]
+    assert_equal [10, 20], config[:series].first[:data]
+  end
+
+  def test_builds_horizontal_bar_chart_options
+    data = [{ x: "A", y: 10 }, { x: "B", y: 20 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :bar)
+    config = builder.build
+
+    assert_equal "bar", config[:chart][:type]
+    assert_equal true, config[:plotOptions][:bar][:horizontal]
+  end
+
+  def test_builds_pie_chart_options
+    data = [{ x: "A", y: 10 }, { x: "B", y: 20 }, { x: "C", y: 30 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :pie)
+    config = builder.build
+
+    assert_equal "pie", config[:chart][:type]
+    assert_equal [10, 20, 30], config[:series]
+    assert_equal ["A", "B", "C"], config[:labels]
+    assert_equal false, config[:grid][:show]
+  end
+
+  def test_builds_donut_chart_options
+    data = [{ x: "A", y: 10 }, { x: "B", y: 20 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :donut)
+    config = builder.build
+
+    assert_equal "donut", config[:chart][:type]
+    assert_equal "65%", config[:plotOptions][:pie][:donut][:size]
+  end
+
+  def test_builds_scatter_chart_options
+    data = [[1, 2], [3, 4], [5, 6]]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :scatter)
+    config = builder.build
+
+    assert_equal "scatter", config[:chart][:type]
+    assert_equal [[1, 2], [3, 4], [5, 6]], config[:series].first[:data]
+    assert_equal "numeric", config[:xaxis][:type]
   end
 
   def test_uses_css_variables_for_colors

@@ -33,8 +33,12 @@ Always prefer these helpers over inventing a custom chart implementation:
 ```erb
 <%= railsui_chart @data, type: :line %>
 <%= railsui_chart @data, type: :area, label: "Revenue" %>
-<%= railsui_chart @data, type: :bar %>
+<%= railsui_chart @data, type: :column, label: "Customers" %>
+<%= railsui_chart @data, type: :bar, label: "Customers" %>
 <%= railsui_chart @data, type: :sparkline %>
+<%= railsui_chart @data, type: :pie %>
+<%= railsui_chart @data, type: :donut %>
+<%= railsui_chart @data, type: :scatter %>
 
 <%= railsui_metric label: "Revenue", value: 48290, change: 12.4, format: :currency, history: @data %>
 ```

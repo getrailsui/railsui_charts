@@ -69,6 +69,36 @@ pin "apexcharts", to: "https://esm.sh/apexcharts@3.45.2"
 <%= railsui_chart @page_views, type: :sparkline %>
 ```
 
+### Column chart
+
+```erb
+<%= railsui_chart @monthly_revenue, type: :column %>
+```
+
+### Horizontal bar chart
+
+```erb
+<%= railsui_chart @plans, type: :bar %>
+```
+
+### Pie chart
+
+```erb
+<%= railsui_chart @plan_distribution, type: :pie %>
+```
+
+### Donut chart
+
+```erb
+<%= railsui_chart @plan_distribution, type: :donut %>
+```
+
+### Scatter chart
+
+```erb
+<%= railsui_chart @experiments, type: :scatter %>
+```
+
 ### Metric card
 
 ```erb
