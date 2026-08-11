@@ -38,7 +38,7 @@ class ApexOptionsBuilderTest < Minitest::Test
 
   def test_rejects_unsupported_type
     assert_raises(ArgumentError) do
-      RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :radar)
+      RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :heatmap)
     end
   end
 
@@ -94,6 +94,39 @@ class ApexOptionsBuilderTest < Minitest::Test
     assert_equal "numeric", config[:xaxis][:type]
     assert_equal 6, config[:markers][:size]
     assert_equal 0, config[:markers][:strokeWidth]
+  end
+
+  def test_builds_bubble_chart_options
+    data = [{ x: 1, y: 2, z: 10 }, { x: 3, y: 4, z: 20 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :bubble)
+    config = builder.build
+
+    assert_equal "bubble", config[:chart][:type]
+    assert_equal [{ x: 1, y: 2, z: 10 }, { x: 3, y: 4, z: 20 }], config[:series].first[:data]
+    assert_equal "numeric", config[:xaxis][:type]
+    assert_equal false, config[:stroke][:show]
+  end
+
+  def test_builds_radar_chart_options
+    data = [{ x: "A", y: 10 }, { x: "B", y: 20 }, { x: "C", y: 30 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :radar)
+    config = builder.build
+
+    assert_equal "radar", config[:chart][:type]
+    assert_equal [10, 20, 30], config[:series].first[:data]
+    assert_equal ["A", "B", "C"], config[:xaxis][:categories]
+    assert_equal false, config[:grid][:show]
+  end
+
+  def test_builds_polar_area_chart_options
+    data = [{ x: "A", y: 10 }, { x: "B", y: 20 }]
+    builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :polar_area)
+    config = builder.build
+
+    assert_equal "polarArea", config[:chart][:type]
+    assert_equal [10, 20], config[:series]
+    assert_equal ["A", "B"], config[:labels]
+    assert_equal false, config[:dataLabels][:enabled]
   end
 
   def test_uses_css_variables_for_colors

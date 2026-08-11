@@ -2,7 +2,7 @@
 
 module RailsuiCharts
   class ApexOptionsBuilder
-    SUPPORTED_TYPES = %i[line area bar column sparkline pie donut scatter].freeze
+    SUPPORTED_TYPES = %i[line area bar column sparkline pie donut scatter bubble radar polar_area].freeze
 
     def initialize(data, type: :line, **options)
       @data = normalize_data(data)
@@ -28,11 +28,11 @@ module RailsuiCharts
       data.map do |point|
         case point
         when Hash
-          { x: point[:x] || point["x"], y: point[:y] || point["y"] }
+          { x: point[:x] || point["x"], y: point[:y] || point["y"], z: point[:z] || point["z"] }
         when Array
-          { x: point[0], y: point[1] }
+          { x: point[0], y: point[1], z: point[2] }
         else
-          { x: nil, y: point }
+          { x: nil, y: point, z: nil }
         end
       end
     end
@@ -47,6 +47,10 @@ module RailsuiCharts
 
     def scatter_series
       @data.map { |d| [d[:x], d[:y]] }
+    end
+
+    def bubble_series
+      @data.map { |d| { x: d[:x], y: d[:y], z: d[:z] || 1 } }
     end
 
     def base_options
@@ -116,6 +120,36 @@ module RailsuiCharts
           xaxis: { type: "numeric", labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
           yaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } }
         }
+      when :bubble
+        {
+          markers: { strokeWidth: 0 },
+          fill: { opacity: 0.7 },
+          xaxis: { type: "numeric", labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
+          yaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } }
+        }
+      when :radar
+        {
+          markers: { size: 4 },
+          stroke: { curve: "straight", width: 2 },
+          fill: { opacity: 0.2 },
+          xaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
+          yaxis: { showAlways: false, labels: { show: false } },
+          grid: { show: false }
+        }
+      when :polar_area
+        {
+          labels: categories.any? ? categories : @data.map.with_index { |_, i| "Item #{i + 1}" },
+          dataLabels: { enabled: false },
+          legend: {
+            position: "bottom",
+            fontFamily: "inherit",
+            labels: { colors: config_color(:text) },
+            markers: { radius: 3 }
+          },
+          xaxis: { labels: { show: false } },
+          yaxis: { labels: { show: false } },
+          grid: { show: false }
+        }
       else
         {}
       end
@@ -134,10 +168,14 @@ module RailsuiCharts
 
     def series_for_type
       case @type
-      when :pie, :donut
+      when :pie, :donut, :polar_area
         series_values
       when :scatter
         [{ name: @options[:label] || "Value", data: scatter_series }]
+      when :bubble
+        [{ name: @options[:label] || "Value", data: bubble_series }]
+      when :radar
+        [{ name: @options[:label] || "Value", data: series_values }]
       else
         [{ name: @options[:label] || "Value", data: series_values }]
       end
@@ -155,7 +193,7 @@ module RailsuiCharts
         axisBorder: { show: false },
         axisTicks: { show: false },
         crosshairs: { show: false },
-        type: @type == :scatter ? "numeric" : "category"
+        type: numeric_xaxis? ? "numeric" : "category"
       }
     end
 
@@ -185,8 +223,16 @@ module RailsuiCharts
     end
 
     def colors_for_type
-      return [config_color(:primary), config_color(:secondary), config_color(:accent), config_color(:muted)] if circular?
+      return [config_color(:primary), config_color(:secondary), config_color(:accent), config_color(:muted)] if circular? || radar? || bubble?
       [config_color(:primary)]
+    end
+
+    def radar?
+      @type == :radar
+    end
+
+    def bubble?
+      @type == :bubble
     end
 
     def stroke_options
@@ -195,6 +241,8 @@ module RailsuiCharts
         { curve: "smooth", width: 2 }
       when :bar, :column
         { show: true, width: 0, colors: ["transparent"] }
+      when :bubble
+        { show: false }
       else
         { curve: "smooth", width: 3 }
       end
@@ -242,6 +290,7 @@ module RailsuiCharts
       when :sparkline then "line"
       when :column, :bar then "bar"
       when :donut then "donut"
+      when :polar_area then "polarArea"
       else @type.to_s
       end
     end
@@ -251,7 +300,11 @@ module RailsuiCharts
     end
 
     def circular?
-      %i[pie donut].include?(@type)
+      %i[pie donut polar_area].include?(@type)
+    end
+
+    def numeric_xaxis?
+      %i[scatter bubble].include?(@type)
     end
 
     def config_color(key)
