@@ -226,7 +226,7 @@ module RailsuiCharts
     end
 
     def colors_for_type
-      return [config_color(:primary), config_color(:secondary), config_color(:accent), config_color(:muted)] if circular? || radar? || bubble?
+      return [solid_color(:primary), solid_color(:secondary), solid_color(:accent), solid_color(:muted)] if circular? || radar? || bubble?
       [config_color(:primary)]
     end
 
@@ -312,6 +312,16 @@ module RailsuiCharts
 
     def config_color(key)
       RailsuiCharts.config.colors[key]
+    end
+
+    def solid_color(key)
+      value = config_color(key).to_s
+      if value.start_with?("var(")
+        fallback = value.match(/var\([^,]+,\s*([^)]+)\)/)&.captures&.first
+        fallback || value
+      else
+        value
+      end
     end
   end
 end

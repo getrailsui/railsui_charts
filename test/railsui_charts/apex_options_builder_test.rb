@@ -138,4 +138,11 @@ class ApexOptionsBuilderTest < Minitest::Test
     assert_equal ["var(--rui-chart-primary, #4f46e5)"], config[:colors]
     assert_equal "var(--rui-chart-grid, rgba(148, 163, 184, 0.2))", config[:grid][:borderColor]
   end
+
+  def test_circular_charts_use_solid_hex_colors
+    data = [{ x: "A", y: 10 }, { x: "B", y: 20 }, { x: "C", y: 30 }]
+    config = RailsuiCharts::ApexOptionsBuilder.new(data, type: :pie).build
+
+    assert_equal ["#4f46e5", "#0ea5e9", "#10b981", "#94a3b8"], config[:colors]
+  end
 end
