@@ -119,15 +119,15 @@ module RailsuiCharts
         {
           plotOptions: { bubble: { zScaling: true, minBubbleRadius: 6, maxBubbleRadius: 28 } },
           markers: { strokeWidth: 0 },
-          fill: { opacity: 0.75 },
+          fill: { opacity: 1 },
           xaxis: { type: "numeric", labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
           yaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } }
         }
       when :radar
         {
-          markers: { size: 4, strokeWidth: 0 },
-          stroke: { curve: "straight", width: 2 },
-          fill: { opacity: 0.25, colors: [config_color(:primary)] },
+          markers: { size: 5, strokeWidth: 0, hover: { size: 7 } },
+          stroke: { curve: "straight", width: 2, colors: [config_color(:primary)] },
+          fill: { opacity: 0.5, colors: [config_color(:primary)] },
           xaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
           yaxis: { showAlways: false, labels: { show: false } },
           grid: { show: true, borderColor: config_color(:grid), strokeDashArray: 4 }
@@ -135,6 +135,7 @@ module RailsuiCharts
       when :polar_area
         {
           labels: categories.any? ? categories : @data.map.with_index { |_, i| "Item #{i + 1}" },
+          plotOptions: { polarArea: { rings: { strokeWidth: 0 }, spokes: { connectorColors: "transparent" } } },
           dataLabels: { enabled: false },
           legend: circular_legend,
           xaxis: { labels: { show: false } },
