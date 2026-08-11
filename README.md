@@ -206,9 +206,9 @@ Every chart renders a visually hidden table with the underlying data for screen 
 
 The Stimulus controller initializes charts on `connect` and destroys them on `disconnect`, so charts work inside Turbo Frames and Turbo Streams without leaks.
 
-## Pro features
+## Full access
 
-Rails UI Pro extends the open-source gem with:
+A Rails UI membership extends the open-source gem with:
 
 - Funnel and cohort charts
 - Reporting and export tools (CSV, PDF)
@@ -216,7 +216,7 @@ Rails UI Pro extends the open-source gem with:
 - Commercial visual presets
 - Priority support and upgrade guidance
 
-[Learn more about Rails UI Pro](https://railsui.com/pricing)
+[Learn more and get full access](https://railsui.com/pricing)
 
 ## License
 
