@@ -1,0 +1,57 @@
+{
+  "name": "railsui_charts",
+  "version": "0.1.0",
+  "description": "Rails-native chart and metric components built on ApexCharts.",
+  "license": "MIT",
+  "language": "ruby",
+  "framework": "rails",
+  "dependencies": {
+    "ruby": ">= 2.7.0",
+    "rails": ">= 7.0",
+    "apexcharts": "^3.45.0"
+  },
+  "components": [
+    {
+      "name": "railsui_chart",
+      "type": "helper",
+      "description": "Renders an ApexCharts chart from Ruby data.",
+      "inputs": {
+        "data": "Array of values, [x, y] pairs, or {x, y} hashes",
+        "type": "line | area | bar | sparkline",
+        "label": "Optional series name",
+        "height": "Optional chart height in pixels",
+        "colors": "Optional array of CSS variable keys or color strings",
+        "accessible": "Boolean, defaults to true"
+      },
+      "examples": [
+        "railsui_chart @daily_signups, type: :line",
+        "railsui_chart @monthly_revenue, type: :area, label: 'Revenue'",
+        "railsui_chart @plans, type: :bar, label: 'Customers'",
+        "railsui_chart @page_views, type: :sparkline"
+      ]
+    },
+    {
+      "name": "railsui_metric",
+      "type": "helper",
+      "description": "Renders a metric value with optional change indicator and sparkline.",
+      "inputs": {
+        "label": "Metric label",
+        "value": "Numeric value",
+        "change": "Optional percentage change",
+        "format": "number | currency | percentage | human",
+        "history": "Optional array of values for the sparkline"
+      },
+      "examples": [
+        "railsui_metric label: 'Monthly revenue', value: 48290, change: 12.4, format: :currency, history: @monthly_revenue"
+      ]
+    }
+  ],
+  "extension_points": [
+    "Override CSS variables for theming",
+    "Subclass RailsuiCharts::ApexOptionsBuilder to customize default options",
+    "Configure RailsuiCharts.config.colors in an initializer"
+  ],
+  "tests": [
+    "bundle exec rake test"
+  ]
+}

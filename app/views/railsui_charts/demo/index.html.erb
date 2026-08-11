@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RailsUI Charts Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= stylesheet_link_tag "tailwind" if defined?(stylesheet_link_tag) %>
+  <%= stylesheet_link_tag "railsui_charts" %>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-8">
+  <div class="max-w-5xl mx-auto space-y-8">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight">RailsUI Charts Demo</h1>
+      <p class="text-slate-600 dark:text-slate-400 mt-2">Server-rendered, accessible charts for Rails.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <%= railsui_metric label: "Monthly revenue", value: 48_290, change: 12.4, format: :currency, history: @monthly_revenue.map { |d| d[:y] } %>
+      <%= railsui_metric label: "Daily signups", value: 28, change: -3.2, format: :number, history: @daily_signups %>
+      <%= railsui_metric label: "Page views", value: 1_827, change: 8.1, format: :human, history: @page_views %>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+      <h2 class="text-lg font-semibold mb-4">Revenue over time</h2>
+      <%= railsui_chart @monthly_revenue, type: :area, label: "Revenue", height: 300 %>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+        <h2 class="text-lg font-semibold mb-4">Plans</h2>
+        <%= railsui_chart @plan_distribution, type: :bar, label: "Customers", height: 250 %>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+        <h2 class="text-lg font-semibold mb-4">Page view trend</h2>
+        <%= railsui_chart @page_views, type: :sparkline, height: 100 %>
+      </div>
+    </div>
+  </div>
+
+  <% if defined?(javascript_importmap_tags) %>
+    <%= javascript_importmap_tags %>
+  <% end %>
+  <%= javascript_include_tag "application" if defined?(javascript_include_tag) %>
+</body>
+</html>

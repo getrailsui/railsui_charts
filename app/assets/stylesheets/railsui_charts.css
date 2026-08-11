@@ -1,0 +1,104 @@
+:root {
+  --rui-chart-primary: #4f46e5;
+  --rui-chart-secondary: #0ea5e9;
+  --rui-chart-accent: #10b981;
+  --rui-chart-muted: #94a3b8;
+  --rui-chart-grid: rgba(148, 163, 184, 0.2);
+  --rui-chart-text: #64748b;
+  --rui-chart-background: transparent;
+  --rui-chart-tooltip-bg: #1e293b;
+  --rui-chart-tooltip-text: #f8fafc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --rui-chart-grid: rgba(148, 163, 184, 0.15);
+    --rui-chart-text: #94a3b8;
+    --rui-chart-tooltip-bg: #0f172a;
+    --rui-chart-tooltip-text: #f1f5f9;
+  }
+}
+
+.dark {
+  --rui-chart-grid: rgba(148, 163, 184, 0.15);
+  --rui-chart-text: #94a3b8;
+  --rui-chart-tooltip-bg: #0f172a;
+  --rui-chart-tooltip-text: #f1f5f9;
+}
+
+.railsui-chart {
+  position: relative;
+  width: 100%;
+}
+
+.railsui-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.railsui-metric-label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--rui-chart-text);
+}
+
+.railsui-metric-value-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.railsui-metric-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--rui-chart-text);
+}
+
+.railsui-metric-change {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.railsui-metric-change--positive {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.railsui-metric-change--negative {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.railsui-metric-change--neutral {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: var(--rui-chart-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .railsui-metric-change--positive {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+  }
+
+  .railsui-metric-change--negative {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+}
+
+.dark .railsui-metric-change--positive {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.dark .railsui-metric-change--negative {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
