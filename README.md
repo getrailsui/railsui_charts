@@ -73,7 +73,8 @@ All charts use the same `railsui_chart` helper. Change the `type:` to switch cha
 ```erb
 <%= railsui_chart @monthly_revenue,
       type: :area,
-      label: "Revenue" %>
+      label: "Revenue",
+      format: :currency %>
 ```
 
 ### Column chart
@@ -178,6 +179,18 @@ railsui_chart [10, 20, 30]
 railsui_chart [["Jan", 10], ["Feb", 20]]
 railsui_chart [{ x: "Jan", y: 10 }, { x: "Feb", y: 20 }]
 ```
+
+## Formatting
+
+Format y-axis labels and tooltips with the `format:` option:
+
+```erb
+<%= railsui_chart @monthly_revenue, type: :area, format: :currency %>
+<%= railsui_chart @growth, type: :line, format: :percentage %>
+<%= railsui_chart @page_views, type: :line, format: :human %>
+```
+
+Supported formats: `:currency`, `:percentage`, `:human`, and `:number` (default). Currency uses the configured currency symbol (`$` by default).
 
 ## Styling
 
