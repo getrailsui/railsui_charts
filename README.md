@@ -1,6 +1,5 @@
 # RailsUI Charts
 
-[![Gem Version](https://img.shields.io/badge/gem-v0.1.0-blue.svg)](https://rubygems.org/gems/railsui_charts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Production-ready chart components for Rails. Built on [ApexCharts](https://apexcharts.com), wrapped in Rails-native helpers, and designed for Tailwind CSS.
