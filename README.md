@@ -1,4 +1,4 @@
-# RailsUI Charts
+# Rails UI Charts
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -16,11 +16,11 @@ Production-ready chart components for Rails. Built on [ApexCharts](https://apexc
 
 Or clone the [railsui.com site](https://github.com/justalever/railsui_app) and visit `/charts` for the full showcase.
 
-## Why RailsUI Charts?
+## Why Rails UI Charts?
 
 AI can generate a first-draft chart in seconds. The hard part is the last 20%: accessibility, responsive behavior, dark mode, Turbo lifecycle support, loading and empty states, and a stable API that does not break when you upgrade.
 
-RailsUI Charts gives you that polish as a drop-in Rails component.
+Rails UI Charts gives you that polish as a drop-in Rails component.
 
 - **Rails-native** — plain ERB helpers, Stimulus controllers, no React required
 - **Accessible** — every chart renders a screen-reader-friendly data table
@@ -208,7 +208,7 @@ The Stimulus controller initializes charts on `connect` and destroys them on `di
 
 ## Pro features
 
-RailsUI Pro extends the open-source gem with:
+Rails UI Pro extends the open-source gem with:
 
 - Funnel and cohort charts
 - Reporting and export tools (CSV, PDF)
@@ -216,7 +216,7 @@ RailsUI Pro extends the open-source gem with:
 - Commercial visual presets
 - Priority support and upgrade guidance
 
-[Learn more about RailsUI Pro](https://railsui.com/pricing)
+[Learn more about Rails UI Pro](https://railsui.com/pricing)
 
 ## License
 
