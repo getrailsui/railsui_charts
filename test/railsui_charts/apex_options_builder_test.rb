@@ -115,7 +115,8 @@ class ApexOptionsBuilderTest < Minitest::Test
     assert_equal "radar", config[:chart][:type]
     assert_equal [10, 20, 30], config[:series].first[:data]
     assert_equal ["A", "B", "C"], config[:xaxis][:categories]
-    assert_equal false, config[:grid][:show]
+    assert_equal true, config[:grid][:show]
+    assert_equal 0, config[:markers][:strokeWidth]
   end
 
   def test_builds_polar_area_chart_options

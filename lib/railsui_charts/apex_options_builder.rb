@@ -104,12 +104,7 @@ module RailsuiCharts
           labels: categories.any? ? categories : @data.map.with_index { |_, i| "Item #{i + 1}" },
           plotOptions: circular_plot_options,
           dataLabels: { enabled: false },
-          legend: {
-            position: "bottom",
-            fontFamily: "inherit",
-            labels: { colors: config_color(:text) },
-            markers: { radius: 3 }
-          },
+          legend: circular_legend,
           xaxis: { labels: { show: false } },
           yaxis: { labels: { show: false } },
           grid: { show: false }
@@ -122,30 +117,26 @@ module RailsuiCharts
         }
       when :bubble
         {
+          plotOptions: { bubble: { zScaling: true, minBubbleRadius: 6, maxBubbleRadius: 28 } },
           markers: { strokeWidth: 0 },
-          fill: { opacity: 0.7 },
+          fill: { opacity: 0.75 },
           xaxis: { type: "numeric", labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
           yaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } }
         }
       when :radar
         {
-          markers: { size: 4 },
+          markers: { size: 4, strokeWidth: 0 },
           stroke: { curve: "straight", width: 2 },
-          fill: { opacity: 0.2 },
+          fill: { opacity: 0.25, colors: [config_color(:primary)] },
           xaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
           yaxis: { showAlways: false, labels: { show: false } },
-          grid: { show: false }
+          grid: { show: true, borderColor: config_color(:grid), strokeDashArray: 4 }
         }
       when :polar_area
         {
           labels: categories.any? ? categories : @data.map.with_index { |_, i| "Item #{i + 1}" },
           dataLabels: { enabled: false },
-          legend: {
-            position: "bottom",
-            fontFamily: "inherit",
-            labels: { colors: config_color(:text) },
-            markers: { radius: 3 }
-          },
+          legend: circular_legend,
           xaxis: { labels: { show: false } },
           yaxis: { labels: { show: false } },
           grid: { show: false }
@@ -164,6 +155,17 @@ module RailsuiCharts
       else
         {}
       end
+    end
+
+    def circular_legend
+      {
+        position: "bottom",
+        fontFamily: "inherit",
+        fontSize: "12px",
+        itemMargin: { horizontal: 10, vertical: 4 },
+        labels: { colors: config_color(:text) },
+        markers: { radius: 3 }
+      }
     end
 
     def series_for_type
