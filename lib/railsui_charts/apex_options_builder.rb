@@ -99,13 +99,20 @@ module RailsuiCharts
         {
           labels: categories.any? ? categories : @data.map.with_index { |_, i| "Item #{i + 1}" },
           plotOptions: circular_plot_options,
-          dataLabels: { enabled: true },
+          dataLabels: { enabled: false },
+          legend: {
+            position: "bottom",
+            fontFamily: "inherit",
+            labels: { colors: config_color(:text) },
+            markers: { radius: 3 }
+          },
           xaxis: { labels: { show: false } },
           yaxis: { labels: { show: false } },
           grid: { show: false }
         }
       when :scatter
         {
+          markers: { size: 6, strokeWidth: 0, hover: { size: 8 } },
           xaxis: { type: "numeric", labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } },
           yaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit" } } }
         }
@@ -117,7 +124,9 @@ module RailsuiCharts
     def circular_plot_options
       case @type
       when :donut
-        { pie: { donut: { size: "65%" } } }
+        { pie: { donut: { size: "55%", labels: { show: false } } } }
+      when :pie
+        { pie: { offsetX: 0, offsetY: 0 } }
       else
         {}
       end

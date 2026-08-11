@@ -78,7 +78,10 @@ class ApexOptionsBuilderTest < Minitest::Test
     config = builder.build
 
     assert_equal "donut", config[:chart][:type]
-    assert_equal "65%", config[:plotOptions][:pie][:donut][:size]
+    assert_equal "55%", config[:plotOptions][:pie][:donut][:size]
+    assert_equal false, config[:plotOptions][:pie][:donut][:labels][:show]
+    assert_equal false, config[:dataLabels][:enabled]
+    assert_equal "bottom", config[:legend][:position]
   end
 
   def test_builds_scatter_chart_options
@@ -89,6 +92,8 @@ class ApexOptionsBuilderTest < Minitest::Test
     assert_equal "scatter", config[:chart][:type]
     assert_equal [[1, 2], [3, 4], [5, 6]], config[:series].first[:data]
     assert_equal "numeric", config[:xaxis][:type]
+    assert_equal 6, config[:markers][:size]
+    assert_equal 0, config[:markers][:strokeWidth]
   end
 
   def test_uses_css_variables_for_colors
