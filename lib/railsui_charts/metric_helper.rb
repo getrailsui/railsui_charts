@@ -33,7 +33,9 @@ module RailsuiCharts
                             chart_height: 180, expand: false, **options)
       change ||= percentage_change(value, previous)
       expand &&= history.present?
-      chart_options = options.merge(label: options[:label] || label)
+      # The chart cannot know that a falling churn rate is a win, so the card
+      # tells it — the tooltip colours its delta the same way the value does.
+      chart_options = options.merge(label: options[:label] || label, trend_up_is_good: positive_is_good)
 
       card = content_tag(:div, class: "railsui-metric-card", data: expand ? { controller: "railsui-metric-dialog" } : {}) do
         safe_join([

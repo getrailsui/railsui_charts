@@ -567,14 +567,77 @@
 
 /* --------------------------------------------------------------- tooltip */
 
-.railsui-chart .apexcharts-tooltip {
+/* Apex ships a dark slab whatever the page is doing. Overriding the container
+   lets the tooltip sit on the same surface as the card it belongs to. */
+.railsui-chart .apexcharts-tooltip.apexcharts-theme-light,
+.railsui-chart .apexcharts-tooltip.apexcharts-theme-dark {
   border: 1px solid var(--rui-chart-border) !important;
-  border-radius: 0.375rem !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+  border-radius: 0.5rem !important;
+  background: var(--rui-chart-surface) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden;
 }
 
-.railsui-chart .apexcharts-tooltip-title {
-  font-weight: 600 !important;
-  border-bottom: 1px solid var(--rui-chart-border) !important;
-  background-color: transparent !important;
+.railsui-chart-tooltip {
+  min-width: 11rem;
+  padding: 0.5rem 0.625rem 0.5625rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--rui-chart-metric-value);
+}
+
+.railsui-chart-tooltip__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid var(--rui-chart-border);
+}
+
+.railsui-chart-tooltip__title {
+  font-weight: 600;
+}
+
+.railsui-chart-tooltip__delta {
+  font-weight: 600;
+}
+
+.railsui-chart-tooltip__delta--positive { color: var(--rui-chart-positive); }
+.railsui-chart-tooltip__delta--negative { color: var(--rui-chart-negative); }
+.railsui-chart-tooltip__delta--neutral { color: var(--rui-chart-metric-muted); }
+
+.railsui-chart-tooltip__rows {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.railsui-chart-tooltip__rows th {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.0625rem 0.75rem 0.0625rem 0;
+  font-weight: 400;
+  text-align: left;
+  color: var(--rui-chart-metric-muted);
+  white-space: nowrap;
+}
+
+/* Values line up in a column, so they read tabular here even though the
+   card's headline figure does not. */
+.railsui-chart-tooltip__rows td {
+  padding: 0.0625rem 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.railsui-chart-tooltip__key {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 0.125rem;
 }

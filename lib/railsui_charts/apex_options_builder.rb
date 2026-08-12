@@ -250,7 +250,11 @@ module RailsuiCharts
         },
         fill: comparison_fill,
         tooltip: { shared: true, intersect: false },
-        legend: comparison_legend
+        legend: comparison_legend,
+        # The comparison series plots against the current period's x positions,
+        # so its own dates would otherwise be lost. The tooltip wants them: a
+        # row reading "Aug 4" says more than a second row reading "Aug 11".
+        compare_categories: @compare.map { |point| point[:x] }.compact
       }
     end
 
