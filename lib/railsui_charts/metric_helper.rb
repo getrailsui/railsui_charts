@@ -60,27 +60,41 @@ module RailsuiCharts
       return if history.blank?
 
       content_tag(:div, class: "railsui-metric-card__chart") do
-        railsui_chart(
-          history,
-          type: :line,
-          compare: compare,
-          # The value above is already spelled out in full, so the axis takes
-          # the compact form: $19K rather than $19,000.00.
-          format: format == :currency ? :short_currency : format,
-          height: height,
-          # Apex clips at the canvas edge, and the first x-axis label is centred
-          # on a point sitting flush at the plot's left edge, so it needs about
-          # half a label's width to sit in.
-          grid: { padding: { left: 22, right: 6 } },
-          # Scale on the right, first and last ticks only — the plot starts
-          # flush with the card edge and the axis reads as a range.
-          axis: :right,
-          edge_labels: true,
-          # The "previous period" line above already names the comparison, so a
-          # legend box would only restate it and eat the card's height.
-          legend: { show: false },
-          **options
-        )
+        safe_join([
+          railsui_chart(
+            history,
+            type: :line,
+            compare: compare,
+            # The value above is already spelled out in full, so the axis takes
+            # the compact form: $19K rather than $19,000.00.
+            format: format == :currency ? :short_currency : format,
+            height: height,
+            # The end labels are rendered below as plain text instead. Apex
+            # centres a label on its data point and clips at the canvas edge, so
+            # an edge label either loses its first characters or has to be
+            # bought with padding that eats into the plot.
+            xaxis: { labels: { show: false } },
+            grid: { padding: { left: 0, right: 4, top: 0, bottom: 0 } },
+            # Scale on the right, so the plot starts flush with the card edge.
+            axis: :right,
+            # The "previous period" line above already names the comparison, so a
+            # legend box would only restate it and eat the card's height.
+            legend: { show: false },
+            **options
+          ),
+          metric_card_axis(history)
+        ].compact)
+      end
+    end
+
+    # First and last labels, flush to the card edges. Nothing to clip, and the
+    # plot keeps its full width.
+    def metric_card_axis(history)
+      labels = Array(history).filter_map { |point| point[:x] || point["x"] if point.is_a?(Hash) }
+      return if labels.length < 2
+
+      content_tag(:div, class: "railsui-metric-card__axis") do
+        safe_join([content_tag(:span, labels.first), content_tag(:span, labels.last)])
       end
     end
 

@@ -9,12 +9,21 @@ module RailsuiCharts
     # Submits as a plain GET form, so it works without JavaScript and each
     # slice gets a shareable URL. With Turbo, the controller submits on change
     # and only the frame re-renders.
-    def railsui_chart_filters(filters, url: nil, frame: nil)
+    #
+    # An app with its own form styles passes them in, so the row matches the
+    # rest of its UI rather than carrying a second look:
+    #
+    #   <%= railsui_chart_filters @filters, url: dashboard_path,
+    #         select_class: "form-select w-auto", checkbox_class: "form-input-checkbox" %>
+    def railsui_chart_filters(filters, url: nil, frame: nil, select_class: nil, checkbox_class: nil)
+      select_class ||= "railsui-chart-filters__select"
+      checkbox_class ||= "railsui-chart-filters__checkbox"
+
       form_tag(url, method: :get, class: "railsui-chart-filters", data: filter_form_data(frame)) do
         safe_join([
-          filter_field("Date range", select_tag(:range, options_for_select(filters.presets.map { |preset| [preset.label, preset.key] }, filters.preset.key), **filter_select_options)),
-          filter_field("Interval", select_tag(:interval, options_for_select(filters.intervals, filters.interval.to_s), **filter_select_options)),
-          filter_compare(filters),
+          filter_field("Date range", select_tag(:range, options_for_select(filters.presets.map { |preset| [preset.label, preset.key] }, filters.preset.key), **filter_select_options(select_class))),
+          filter_field("Interval", select_tag(:interval, options_for_select(filters.intervals, filters.interval.to_s), **filter_select_options(select_class))),
+          filter_compare(filters, checkbox_class),
           # Without Turbo or Stimulus the selects still need a way to apply.
           content_tag(:noscript, submit_tag("Apply", class: "railsui-chart-filters__apply", data: { disable_with: nil }))
         ])
@@ -38,21 +47,21 @@ module RailsuiCharts
       end
     end
 
-    def filter_select_options
+    def filter_select_options(select_class)
       {
-        class: "railsui-chart-filters__select",
+        class: select_class,
         data: { action: "change->railsui-chart-filters#submit" }
       }
     end
 
-    def filter_compare(filters)
+    def filter_compare(filters, checkbox_class)
       content_tag(:label, class: "railsui-chart-filters__compare") do
         safe_join([
           # Paired hidden field so unchecking sends an explicit value rather
           # than dropping the param and falling back to the default.
           hidden_field_tag(:compare, "0", id: nil),
           check_box_tag(:compare, "1", filters.compare?,
-                        class: "railsui-chart-filters__checkbox",
+                        class: checkbox_class,
                         data: { action: "change->railsui-chart-filters#submit" }),
           content_tag(:span, "Compare to previous period")
         ])
