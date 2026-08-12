@@ -2,6 +2,9 @@
 
 module RailsuiCharts
   module ChartHelper
+    # Forms whose placeholder should be a disc rather than a plotting area.
+    CIRCULAR_TYPES = %i[pie donut polar_area radar].freeze
+
     def railsui_chart(data, type: :line, **options)
       # An empty dataset is a normal day one, not an error. Rendering axes
       # around nothing looks like a chart that failed rather than a chart with
@@ -32,14 +35,18 @@ module RailsuiCharts
     end
 
     # Server-rendered placeholder for a chart whose data has not arrived yet —
-    # the thing a Turbo frame shows before it swaps in the real one.
-    def railsui_chart_skeleton(height: nil, label: "Loading chart")
+    # the thing a Turbo frame shows before it swaps in the real one. Pass the
+    # `type:` it will become so the placeholder is the shape being waited on.
+    def railsui_chart_skeleton(height: nil, type: :line, label: "Loading chart")
+      classes = ["railsui-chart-skeleton"]
+      classes << "railsui-chart-skeleton--circular" if CIRCULAR_TYPES.include?(type.to_sym)
+
       content_tag(:div,
                   class: "railsui-chart-state railsui-chart-state--loading",
                   style: state_height(height),
                   role: "status",
                   aria: { label: label, busy: true }) do
-        content_tag(:span, "", class: "railsui-chart-skeleton", aria: { hidden: true })
+        content_tag(:span, "", class: classes.join(" "), aria: { hidden: true })
       end
     end
 

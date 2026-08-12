@@ -28,6 +28,8 @@
   --rui-chart-border: rgba(17, 24, 39, 0.14);
   --rui-chart-hover: rgba(17, 24, 39, 0.06);
   --rui-chart-switch-off: #d1d5db;
+  --rui-chart-skeleton: #f1f3f5;
+  --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.9);
   --rui-chart-positive: #047857;
   --rui-chart-negative: #b91c1c;
   --rui-chart-tooltip-bg: #1e293b;
@@ -45,6 +47,8 @@
     --rui-chart-border: rgba(255, 255, 255, 0.16);
     --rui-chart-hover: rgba(255, 255, 255, 0.08);
     --rui-chart-switch-off: #4b5563;
+    --rui-chart-skeleton: rgba(255, 255, 255, 0.05);
+    --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.07);
     --rui-chart-positive: #34d399;
     --rui-chart-negative: #f87171;
     --rui-chart-tooltip-bg: #0f172a;
@@ -65,6 +69,8 @@
   --rui-chart-border: rgba(255, 255, 255, 0.16);
   --rui-chart-hover: rgba(255, 255, 255, 0.08);
   --rui-chart-switch-off: #4b5563;
+  --rui-chart-skeleton: rgba(255, 255, 255, 0.05);
+  --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.07);
   --rui-chart-positive: #34d399;
   --rui-chart-negative: #f87171;
   --rui-chart-tooltip-bg: #0f172a;
@@ -122,12 +128,14 @@
 /* Gridlines rather than a plain block, so the placeholder reads as a chart
    arriving instead of generic furniture. */
 .railsui-chart-skeleton {
+  position: relative;
   display: block;
   width: 100%;
   min-height: inherit;
   align-self: stretch;
+  overflow: hidden;
   border-radius: 0.5rem;
-  background-color: var(--rui-chart-hover);
+  background-color: var(--rui-chart-skeleton);
   background-image: repeating-linear-gradient(
     to bottom,
     var(--rui-chart-grid) 0,
@@ -135,12 +143,37 @@
     transparent 1px,
     transparent 25%
   );
-  animation: railsui-chart-pulse 1.6s ease-in-out infinite;
 }
 
-@keyframes railsui-chart-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+/* A sheen sweeping across, rather than the whole block breathing. Pulsing
+   opacity dims the gridlines too and reads as a broken element; a sweep reads
+   as work in progress. */
+.railsui-chart-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0,
+    var(--rui-chart-skeleton-sheen) 50%,
+    transparent 100%
+  );
+  animation: railsui-chart-sweep 1.6s ease-in-out infinite;
+}
+
+/* Circular forms get a disc, so the placeholder is the shape of the thing
+   being waited on. */
+.railsui-chart-skeleton--circular {
+  width: auto;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 9999px;
+  background-image: none;
+}
+
+@keyframes railsui-chart-sweep {
+  100% { transform: translateX(100%); }
 }
 
 /* Turbo marks a frame busy while it fetches. Holding the previous render at
@@ -153,8 +186,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .railsui-chart-skeleton {
+  /* The skeleton still reads as a placeholder standing still. */
+  .railsui-chart-skeleton::after {
     animation: none;
+    opacity: 0.4;
+    transform: none;
   }
 
   [aria-busy="true"] .railsui-chart,

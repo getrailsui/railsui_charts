@@ -45,6 +45,16 @@ class StatesTest < Minitest::Test
     assert_includes html, "railsui-chart-skeleton"
   end
 
+  def test_skeleton_takes_the_shape_of_the_chart_being_waited_on
+    %i[pie donut polar_area radar].each do |type|
+      assert_includes railsui_chart_skeleton(type: type), "railsui-chart-skeleton--circular", "#{type} should wait as a disc"
+    end
+
+    %i[line area bar column scatter].each do |type|
+      refute_includes railsui_chart_skeleton(type: type), "railsui-chart-skeleton--circular", "#{type} should wait as a plot area"
+    end
+  end
+
   def test_error_state_reads_as_a_failure_not_an_absence
     html = railsui_chart_error(description: "The query timed out.")
 
