@@ -136,9 +136,11 @@ module RailsuiCharts
               ])
             end,
             # Room to read values rather than just a trend, so the axis labels
-            # the card suppresses come back.
+            # the card suppresses come back. They centre on their data point,
+            # so the outermost two need room or Apex clips them at the canvas.
             railsui_chart(history, type: :line, compare: compare, format: format, height: 420,
-                                   axis: :right, legend: { show: compare.present? }, **options)
+                                   axis: :right, legend: { show: compare.present? },
+                                   grid: { padding: { left: 28, right: 12 } }, **options)
           ])
         end
       end
