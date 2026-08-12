@@ -285,7 +285,7 @@ module RailsuiCharts
     def user_options
       opts = @options.except(:type, :height, :label)
       opts[:colors] = Array(opts[:colors]).map { |c| config_color(c) || c } if opts.key?(:colors)
-      opts[:currency] ||= RailsuiCharts.config.default_currency if opts[:format].to_s == "currency"
+      opts[:currency] ||= RailsuiCharts.config.default_currency if %w[currency short_currency].include?(opts[:format].to_s)
       opts
     end
 
