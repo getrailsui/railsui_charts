@@ -20,7 +20,14 @@ module RailsuiCharts
     end
 
     def build
-      deep_merge(base_options, chart_specific_options, comparison_options, user_options)
+      config = deep_merge(base_options, chart_specific_options, comparison_options, user_options)
+      return config if sparkline?
+
+      # Derived from the finished config, not from the defaults. Apex swaps a
+      # breakpoint's axis object in wholesale rather than merging it, so
+      # anything already decided — which side the scale hangs on, hidden
+      # labels — has to be carried across or it is lost at that width.
+      config.merge(responsive: responsive_options(config))
     end
 
     private
@@ -97,6 +104,44 @@ module RailsuiCharts
         tooltip: tooltip_options,
         theme: { mode: "light" }
       }
+    end
+
+    # A chart that only works at desktop width is not finished. On a phone the
+    # plot loses most of its horizontal room, so the chrome gives way first:
+    # fewer gridlines, smaller type, a tighter legend, and less height.
+    def responsive_options(config)
+      [
+        {
+          breakpoint: 640,
+          options: {
+            chart: { height: mobile_height },
+            legend: { fontSize: "11px", itemMargin: { horizontal: 6, vertical: 2 } },
+            xaxis: carry_over(config[:xaxis], { labels: { style: { fontSize: "11px" } } }),
+            yaxis: mobile_yaxis(config[:yaxis]),
+            grid: carry_over(config[:grid], { padding: { left: 0, right: 0 } }),
+            markers: { hover: { size: 8 } }
+          }
+        }
+      ]
+    end
+
+    def mobile_yaxis(current)
+      overrides = { labels: { style: { fontSize: "11px" } } }
+      # A numeric axis already has bounds picked so its ticks land on round
+      # numbers. Forcing a count knocks them back off — 10..70 in four steps
+      # reads 10 / 25 / 40 / 55 / 70.
+      overrides[:tickAmount] = 4 unless current.is_a?(Hash) && current.key?(:min)
+
+      carry_over(current, overrides)
+    end
+
+    def carry_over(current, overrides)
+      current.is_a?(Hash) ? deep_merge(current, overrides) : overrides
+    end
+
+    def mobile_height
+      height = @options[:height] || RailsuiCharts.config.default_height
+      [height.to_i, 260].min
     end
 
     def chart_specific_options

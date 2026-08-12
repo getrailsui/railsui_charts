@@ -153,6 +153,56 @@ class ApexOptionsBuilderTest < Minitest::Test
     assert_equal "var(--rui-chart-grid, rgba(148, 163, 184, 0.2))", config[:grid][:borderColor]
   end
 
+  def test_charts_give_way_at_phone_widths
+    config = RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :line, height: 340).build
+    mobile = config[:responsive].first
+
+    assert_equal 640, mobile[:breakpoint]
+    # Shorter, fewer gridlines, smaller type.
+    assert_equal 260, mobile[:options][:chart][:height]
+    assert_equal 4, mobile[:options][:yaxis][:tickAmount]
+  end
+
+  def test_mobile_overrides_carry_decisions_already_made
+    config = RailsuiCharts::ApexOptionsBuilder.new([1, 2], type: :line, axis: :right).build
+    mobile = config[:responsive].first[:options]
+
+    # Apex swaps the axis object in wholesale at a breakpoint, so a scale that
+    # hangs on the right would silently jump back to the left on a phone.
+    assert_equal true, mobile[:yaxis][:opposite]
+    assert_equal 4, mobile[:yaxis][:tickAmount]
+  end
+
+  def test_mobile_leaves_computed_numeric_bounds_alone
+    data = [{ x: 10, y: 20, z: 1 }, { x: 60, y: 55, z: 9 }]
+    config = RailsuiCharts::ApexOptionsBuilder.new(data, type: :bubble).build
+    mobile = config[:responsive].first[:options]
+
+    # A numeric axis keeps the tick count that puts its labels on round
+    # numbers. Forcing four over 10..70 would read 10 / 25 / 40 / 55 / 70.
+    assert_equal config[:yaxis][:tickAmount], mobile[:yaxis][:tickAmount]
+    refute_equal 4, mobile[:yaxis][:tickAmount]
+  end
+
+  def test_mobile_overrides_keep_hidden_axis_labels_hidden
+    config = RailsuiCharts::ApexOptionsBuilder.new([{ x: "Jan", y: 1 }], type: :line, xaxis: { labels: { show: false } }).build
+
+    assert_equal false, config[:responsive].first[:options][:xaxis][:labels][:show]
+  end
+
+  def test_a_short_chart_is_not_made_taller_on_mobile
+    config = RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :line, height: 160).build
+
+    assert_equal 160, config[:responsive].first[:options][:chart][:height]
+  end
+
+  def test_sparklines_skip_responsive_rules
+    # A sparkline has no chrome to give up, so it ships no breakpoint at all.
+    config = RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :sparkline).build
+
+    refute config.key?(:responsive)
+  end
+
   def test_gridlines_are_solid_hairlines
     config = RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :line).build
 
