@@ -116,7 +116,7 @@
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: translateY(-25%) rotate(45deg);
-  opacity: 0.5;
+  opacity: 0.65;
   pointer-events: none;
 }
 
@@ -141,8 +141,12 @@
   transition: background-color 120ms ease;
 }
 
+/* A hairline with the wash. On a near-black page a bare fill reads as a soft
+   grey blob with no edge; the inset ring gives the pill a boundary without
+   reserving border width in the resting state. */
 .railsui-chart-filters__select:hover {
   background-color: var(--rui-chart-hover);
+  box-shadow: inset 0 0 0 1px var(--rui-chart-border);
 }
 
 .railsui-chart-filters__select:focus-visible {
@@ -168,6 +172,7 @@
 
 .railsui-chart-filters__compare--switch:hover {
   background-color: var(--rui-chart-hover);
+  box-shadow: inset 0 0 0 1px var(--rui-chart-border);
 }
 
 /* Kept in the accessibility tree and focusable; the track is what you see. */
