@@ -9,11 +9,22 @@ export default class extends Controller {
     // rendering first paints every chart light on a dark OS.
     this.bindThemeListeners()
     this.render()
+
+    // Apex measures the element as it renders. Anything hidden at connect — a
+    // closed dialog, a collapsed panel — measures zero and draws nothing, so
+    // whatever reveals it says so and the chart lays itself out.
+    this.refresh = this.refresh.bind(this)
+    this.element.addEventListener("railsui-chart:refresh", this.refresh)
   }
 
   disconnect() {
+    this.element.removeEventListener("railsui-chart:refresh", this.refresh)
     this.destroy()
     this.unbindThemeListeners()
+  }
+
+  refresh() {
+    this.render()
   }
 
   render() {

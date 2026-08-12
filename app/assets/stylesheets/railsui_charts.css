@@ -28,8 +28,9 @@
   --rui-chart-border: rgba(17, 24, 39, 0.14);
   --rui-chart-hover: rgba(17, 24, 39, 0.06);
   --rui-chart-switch-off: #d1d5db;
-  --rui-chart-skeleton: #f1f3f5;
-  --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.9);
+  --rui-chart-skeleton: #f8f9fa;
+  --rui-chart-skeleton-line: rgba(148, 163, 184, 0.13);
+  --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.65);
   --rui-chart-positive: #047857;
   --rui-chart-negative: #b91c1c;
   --rui-chart-tooltip-bg: #1e293b;
@@ -48,6 +49,7 @@
     --rui-chart-hover: rgba(255, 255, 255, 0.08);
     --rui-chart-switch-off: #4b5563;
     --rui-chart-skeleton: rgba(255, 255, 255, 0.05);
+    --rui-chart-skeleton-line: rgba(255, 255, 255, 0.06);
     --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.07);
     --rui-chart-positive: #34d399;
     --rui-chart-negative: #f87171;
@@ -70,6 +72,7 @@
   --rui-chart-hover: rgba(255, 255, 255, 0.08);
   --rui-chart-switch-off: #4b5563;
   --rui-chart-skeleton: rgba(255, 255, 255, 0.05);
+  --rui-chart-skeleton-line: rgba(255, 255, 255, 0.06);
   --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.07);
   --rui-chart-positive: #34d399;
   --rui-chart-negative: #f87171;
@@ -136,10 +139,13 @@
   overflow: hidden;
   border-radius: 0.5rem;
   background-color: var(--rui-chart-skeleton);
+  /* Its own line colour, softer than a real gridline. A placeholder should
+     suggest the shape of what is coming without competing with the charts
+     already on screen around it. */
   background-image: repeating-linear-gradient(
     to bottom,
-    var(--rui-chart-grid) 0,
-    var(--rui-chart-grid) 1px,
+    var(--rui-chart-skeleton-line) 0,
+    var(--rui-chart-skeleton-line) 1px,
     transparent 1px,
     transparent 25%
   );
@@ -474,13 +480,67 @@
 }
 
 .railsui-metric-card__details {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
   font-weight: 500;
+  line-height: inherit;
   color: var(--rui-chart-primary);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .railsui-metric-card__details:hover {
   text-decoration: underline;
+}
+
+/* --------------------------------------------------------- expanded view */
+
+.railsui-metric-dialog {
+  width: min(56rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  padding: 0;
+  border: 1px solid var(--rui-chart-border);
+  border-radius: 0.75rem;
+  background-color: var(--rui-chart-surface);
+  color: var(--rui-chart-metric-value);
+  overflow: hidden;
+}
+
+.railsui-metric-dialog::backdrop {
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
+.railsui-metric-dialog__panel {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.railsui-metric-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.railsui-metric-dialog__close {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: var(--rui-chart-metric-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.railsui-metric-dialog__close:hover {
+  background-color: var(--rui-chart-hover);
 }
 
 /* ---------------------------------------------------------------- deltas */

@@ -24,8 +24,16 @@ module RailsuiCharts
         end
       end
 
-      def copy_stimulus_controller
-        copy_file "railsui_chart_controller.js", "app/javascript/controllers/railsui_chart_controller.js"
+      CONTROLLERS = %w[
+        railsui_chart_controller.js
+        railsui_chart_filters_controller.js
+        railsui_metric_dialog_controller.js
+      ].freeze
+
+      def copy_stimulus_controllers
+        CONTROLLERS.each do |controller|
+          copy_file controller, "app/javascript/controllers/#{controller}"
+        end
       end
 
       def print_next_steps

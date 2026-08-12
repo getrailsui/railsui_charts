@@ -24,19 +24,27 @@ module RailsuiCharts
     # The full dashboard card: label, value, delta, previous-period line, a
     # comparison chart, and a footer. This is the piece a Rails app actually
     # drops into a dashboard — the chart alone is rarely the whole job.
+    # `expand: true` turns the footer link into an expanded view of the same
+    # series — a card chart is 180px tall, which is enough to read a trend and
+    # not enough to read a value. Takes precedence over `details_path`.
     def railsui_metric_card(label:, value:, previous: nil, change: nil, history: nil, compare: nil,
                             format: :number, updated_at: nil, details_path: nil,
                             details_label: "More details", positive_is_good: true,
-                            chart_height: 180, **options)
+                            chart_height: 180, expand: false, **options)
       change ||= percentage_change(value, previous)
+      expand &&= history.present?
+      chart_options = options.merge(label: options[:label] || label)
 
-      content_tag(:div, class: "railsui-metric-card") do
+      card = content_tag(:div, class: "railsui-metric-card", data: expand ? { controller: "railsui-metric-dialog" } : {}) do
         safe_join([
           metric_card_head(label, value, change, previous, format, positive_is_good),
-          metric_card_chart(history, compare, format, chart_height, options.merge(label: options[:label] || label)),
-          metric_card_footer(updated_at, details_path, details_label)
+          metric_card_chart(history, compare, format, chart_height, chart_options),
+          metric_card_footer(updated_at, details_path, details_label, expand: expand),
+          expand ? metric_dialog(label, value, change, previous, history, compare, format, positive_is_good, chart_options) : nil
         ].compact)
       end
+
+      card
     end
 
     private
@@ -99,14 +107,40 @@ module RailsuiCharts
       end
     end
 
-    def metric_card_footer(updated_at, details_path, details_label)
-      return if updated_at.blank? && details_path.blank?
+    def metric_card_footer(updated_at, details_path, details_label, expand: false)
+      return if updated_at.blank? && details_path.blank? && !expand
+
+      action = if expand
+                 content_tag(:button, details_label, type: "button", class: "railsui-metric-card__details",
+                                                     data: { action: "railsui-metric-dialog#open" })
+               elsif details_path.present?
+                 link_to(details_label, details_path, class: "railsui-metric-card__details")
+               end
 
       content_tag(:div, class: "railsui-metric-card__footer") do
-        safe_join([
-          content_tag(:span, updated_at, class: "railsui-metric-card__updated"),
-          details_path.present? ? link_to(details_label, details_path, class: "railsui-metric-card__details") : nil
-        ].compact)
+        safe_join([content_tag(:span, updated_at, class: "railsui-metric-card__updated"), action].compact)
+      end
+    end
+
+    def metric_dialog(label, value, change, previous, history, compare, format, positive_is_good, options)
+      content_tag(:dialog,
+                  class: "railsui-metric-dialog",
+                  data: { "railsui-metric-dialog-target": "dialog", action: "click->railsui-metric-dialog#closeOnBackdrop" }) do
+        content_tag(:div, class: "railsui-metric-dialog__panel") do
+          safe_join([
+            content_tag(:div, class: "railsui-metric-dialog__head") do
+              safe_join([
+                metric_card_head(label, value, change, previous, format, positive_is_good),
+                content_tag(:button, "&times;".html_safe, type: "button", class: "railsui-metric-dialog__close",
+                                                          aria: { label: "Close" }, data: { action: "railsui-metric-dialog#close" })
+              ])
+            end,
+            # Room to read values rather than just a trend, so the axis labels
+            # the card suppresses come back.
+            railsui_chart(history, type: :line, compare: compare, format: format, height: 420,
+                                   axis: :right, legend: { show: compare.present? }, **options)
+          ])
+        end
       end
     end
 

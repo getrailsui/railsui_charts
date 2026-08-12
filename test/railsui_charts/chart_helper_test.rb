@@ -61,6 +61,26 @@ class ChartHelperTest < Minitest::Test
     assert_includes html, "Updated 1 second ago"
   end
 
+  def test_metric_card_can_expand_into_a_larger_view
+    html = railsui_metric_card(
+      label: "MRR", value: 18_450, previous: 17_200, format: :currency,
+      history: [{ x: "Aug 1", y: 16_000 }, { x: "Aug 2", y: 18_450 }],
+      expand: true
+    )
+
+    assert_includes html, "railsui-metric-dialog"
+    assert_includes html, "railsui-metric-dialog#open"
+    # A button, not a link — it goes nowhere.
+    assert_includes html, "<button"
+    assert_includes html, "&quot;height&quot;:420"
+  end
+
+  def test_expanding_needs_something_to_expand
+    html = railsui_metric_card(label: "MRR", value: 0, history: [], expand: true)
+
+    refute_includes html, "railsui-metric-dialog"
+  end
+
   def test_metric_card_colours_delta_by_meaning_not_sign
     html = railsui_metric_card(label: "Churn", value: 2.4, previous: 2.8, format: :percentage, positive_is_good: false)
 
