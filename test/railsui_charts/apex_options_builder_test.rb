@@ -133,6 +133,17 @@ class ApexOptionsBuilderTest < Minitest::Test
     assert_equal 0, config[:markers][:strokeWidth]
   end
 
+  def test_circular_legends_reserve_their_own_band
+    # Apex's own estimate for a bottom legend runs short, and the canvas clips:
+    # the last row lost its descenders, or vanished once a narrow card wrapped
+    # the legend onto a second line.
+    %i[pie donut polar_area].each do |type|
+      config = RailsuiCharts::ApexOptionsBuilder.new([{ x: "A", y: 1 }, { x: "B", y: 2 }], type: type).build
+
+      assert_equal RailsuiCharts::ApexOptionsBuilder::CIRCULAR_LEGEND_HEIGHT, config[:legend][:height], "#{type} should reserve a legend band"
+    end
+  end
+
   def test_builds_polar_area_chart_options
     data = [{ x: "A", y: 10 }, { x: "B", y: 20 }]
     builder = RailsuiCharts::ApexOptionsBuilder.new(data, type: :polar_area)

@@ -12,6 +12,10 @@ module RailsuiCharts
     # Series that support an overlaid previous-period comparison.
     COMPARABLE_TYPES = %i[line area column sparkline].freeze
 
+    # Two rows' worth. Circular charts cap at four categories, which is the most
+    # that can wrap onto a second line in a narrow card.
+    CIRCULAR_LEGEND_HEIGHT = 52
+
     def initialize(data, type: :line, compare: nil, **options)
       @data = normalize_data(data)
       @compare = compare.nil? ? nil : normalize_data(compare)
@@ -314,6 +318,11 @@ module RailsuiCharts
         horizontalAlign: "center",
         fontFamily: "inherit",
         fontSize: "12px",
+        # Reserve the band rather than letting Apex estimate it. Its own
+        # estimate runs a few pixels short, and since the canvas clips, the
+        # bottom row of labels loses its descenders — or the whole row, once a
+        # narrow card wraps the legend onto two lines.
+        height: CIRCULAR_LEGEND_HEIGHT,
         itemMargin: { horizontal: 8, vertical: 2 },
         labels: { colors: config_color(:text) },
         markers: { width: 8, height: 8, radius: 8, offsetX: -2 }
