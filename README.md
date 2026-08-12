@@ -347,6 +347,48 @@ The default order is not a style choice. It was picked by validating every order
 
 Forms where any two marks sit side by side — pie, donut, polar area, scatter, bubble — hold to a stricter all-pairs test that these hues clear for the **first four slots**. Past four categories, fold the tail into an "Other" bucket or switch to a bar chart rather than adding a ninth hue.
 
+## States
+
+A new account has no data, a Turbo frame spends a moment fetching, and queries time out. Each state holds the chart's footprint so nothing below it moves.
+
+### Empty
+
+No branching needed — `railsui_chart` renders the empty panel when the data comes back with nothing:
+
+```erb
+<%= railsui_chart @revenue, type: :area, height: 240 %>
+```
+
+Say more when it helps:
+
+```erb
+<%= railsui_chart @revenue, type: :area, height: 240,
+      empty: { title: "No revenue yet",
+               description: "Charges appear here once you take your first payment." } %>
+```
+
+A series of zeroes is **not** empty. A quiet day still has something to say, and a flat line at zero is how to say it.
+
+### Loading
+
+```erb
+<%= railsui_chart_skeleton height: 240 %>
+```
+
+Render it server-side and let a Turbo Stream swap in the real chart.
+
+On **refetch**, don't reach for the skeleton. Any element inside a container marked `aria-busy="true"` — which is what Turbo does to a frame while it loads — holds its previous render at reduced opacity instead. The numbers stay on screen and the layout stays still; a skeleton would throw the chart away and flash.
+
+### Error
+
+```erb
+<%= railsui_chart_error height: 240,
+      title: "Couldn't load revenue",
+      description: "The query timed out. Try a shorter range." %>
+```
+
+A failure reads as a failure rather than as an absence, so nobody mistakes a broken query for a quiet month.
+
 ## Accessibility
 
 Every chart renders a visually hidden table with the underlying data for screen readers, so no value is reachable only by hovering a mark. Comparison series get their own column. Disable it with `accessible: false` if you provide your own alternative.

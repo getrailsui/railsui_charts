@@ -76,6 +76,93 @@
   width: 100%;
 }
 
+/* ----------------------------------------------------------------- states */
+
+.railsui-chart-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem;
+  border: 1px dashed var(--rui-chart-border);
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.railsui-chart-state__title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  color: var(--rui-chart-metric-muted);
+}
+
+.railsui-chart-state__description {
+  margin: 0.25rem 0 0;
+  max-width: 44ch;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: var(--rui-chart-text);
+}
+
+.railsui-chart-state--error {
+  border-style: solid;
+  border-color: var(--rui-chart-negative);
+}
+
+.railsui-chart-state--error .railsui-chart-state__title {
+  color: var(--rui-chart-negative);
+}
+
+.railsui-chart-state--loading {
+  border-style: none;
+  padding: 0;
+}
+
+/* Gridlines rather than a plain block, so the placeholder reads as a chart
+   arriving instead of generic furniture. */
+.railsui-chart-skeleton {
+  display: block;
+  width: 100%;
+  min-height: inherit;
+  align-self: stretch;
+  border-radius: 0.5rem;
+  background-color: var(--rui-chart-hover);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--rui-chart-grid) 0,
+    var(--rui-chart-grid) 1px,
+    transparent 1px,
+    transparent 25%
+  );
+  animation: railsui-chart-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes railsui-chart-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Turbo marks a frame busy while it fetches. Holding the previous render at
+   reduced opacity keeps the numbers on screen and the layout still — a
+   skeleton here would throw the chart away and flash. */
+[aria-busy="true"] .railsui-chart,
+[aria-busy="true"] .railsui-metric-card {
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .railsui-chart-skeleton {
+    animation: none;
+  }
+
+  [aria-busy="true"] .railsui-chart,
+  [aria-busy="true"] .railsui-metric-card {
+    transition: none;
+  }
+}
+
 /* ---------------------------------------------------------------- filters */
 
 /* One row above everything it scopes. Never inside a chart card — per-card

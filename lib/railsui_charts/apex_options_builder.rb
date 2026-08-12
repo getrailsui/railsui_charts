@@ -16,6 +16,25 @@ module RailsuiCharts
     # that can wrap onto a second line in a narrow card.
     CIRCULAR_LEGEND_HEIGHT = 52
 
+    # No points, or points that carry no value. A series of zeroes is real data
+    # and is not blank — a quiet day still has something to say.
+    def self.blank?(data)
+      return true if data.nil?
+
+      points = data.respond_to?(:to_a) && !data.is_a?(Array) ? data.to_a : Array(data)
+      return true if points.empty?
+
+      points.all? { |point| value_of(point).nil? }
+    end
+
+    def self.value_of(point)
+      case point
+      when Hash then point[:y] || point["y"]
+      when Array then point[1]
+      else point
+      end
+    end
+
     def initialize(data, type: :line, compare: nil, **options)
       @data = normalize_data(data)
       @compare = compare.nil? ? nil : normalize_data(compare)

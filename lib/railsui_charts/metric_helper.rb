@@ -57,8 +57,9 @@ module RailsuiCharts
     end
 
     def metric_card_chart(history, compare, format, height, options)
-      return if history.blank?
-
+      # No early return on blank history: railsui_chart renders its empty panel
+      # at the same height, so a card with nothing to plot keeps its shape
+      # instead of collapsing and shuffling the grid around it.
       content_tag(:div, class: "railsui-metric-card__chart") do
         safe_join([
           railsui_chart(
