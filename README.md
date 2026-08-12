@@ -143,7 +143,25 @@ Data points accept an optional `:z` value for bubble size:
 <%= railsui_chart @page_views, type: :sparkline %>
 ```
 
-### Metric card
+### Comparing against a previous period
+
+Pass `compare:` a second series and it rides underneath the first as a dashed,
+muted line on the **same axis** — never a second y-scale.
+
+```erb
+<%= railsui_chart @this_year,
+      type: :area,
+      label: "This year",
+      compare: @last_year,
+      compare_label: "Last year",
+      format: :short_currency %>
+```
+
+Supported for `:line`, `:area`, `:column`, and `:sparkline`.
+
+### Metric
+
+A compact label / value / delta stack with an optional sparkline.
 
 ```erb
 <%= railsui_metric
@@ -152,6 +170,31 @@ Data points accept an optional `:z` value for bubble size:
       change: 12.4,
       format: :currency,
       history: @monthly_revenue %>
+```
+
+### Metric card
+
+The full dashboard card: label, value, delta, previous-period line, comparison
+chart, and footer. The delta is computed from `value` and `previous`.
+
+```erb
+<%= railsui_metric_card
+      label: "MRR",
+      value: 18_450,
+      previous: 17_200,
+      format: :currency,
+      history: @mrr_this_period,
+      compare: @mrr_last_period,
+      updated_at: "Updated 1 second ago",
+      details_path: dashboard_path %>
+```
+
+Direction and *goodness* are separate. A falling churn rate is a win, so pass
+`positive_is_good: false` and the negative delta reads green:
+
+```erb
+<%= railsui_metric_card label: "Churn rate", value: 2.4, previous: 2.8,
+      format: :percentage, positive_is_good: false, history: @churn %>
 ```
 
 ## Supported chart types
@@ -190,7 +233,16 @@ Format y-axis labels and tooltips with the `format:` option:
 <%= railsui_chart @page_views, type: :line, format: :human %>
 ```
 
-Supported formats: `:currency`, `:percentage`, `:human`, and `:number` (default). Currency uses the configured currency symbol (`$` by default).
+Supported formats: `:currency`, `:short_currency`, `:percentage`, `:human`, and `:number` (default). Currency uses the configured currency symbol (`$` by default). `:short_currency` renders compact axis labels like `$19K`.
+
+## Axis options
+
+```erb
+<%= railsui_chart @data, type: :line,
+      axis: :right,        # hang the scale on the right, Stripe-style
+      edge_labels: true,   # label only the first and last x tick
+      curve: "smooth" %>   # default is "straight"
+```
 
 ## Styling
 
@@ -199,21 +251,40 @@ Colors are controlled by CSS variables. Override them in your Tailwind CSS or cu
 ```css
 :root {
   --rui-chart-primary: #6366f1;
-  --rui-chart-secondary: #0ea5e9;
-  --rui-chart-accent: #10b981;
   --rui-chart-muted: #94a3b8;
-  --rui-chart-grid: rgba(148, 163, 184, 0.18);
+  --rui-chart-grid: rgba(148, 163, 184, 0.22);
   --rui-chart-text: #64748b;
-  --rui-chart-metric-label: #6b7280;
-  --rui-chart-metric-value: #111827;
+  --rui-chart-surface: #ffffff;
+  --rui-chart-positive: #047857;
+  --rui-chart-negative: #b91c1c;
 }
 ```
 
-Dark mode is automatically detected via `prefers-color-scheme` or a `data-theme="dark"` attribute on the document element.
+Dark mode is detected via `prefers-color-scheme`, a `dark` class, or a `data-theme="dark"` attribute on the document element, and charts re-render when it changes.
+
+### Categorical colors
+
+Charts that show several categories at once (pie, donut, polar area, radar, bubble) draw from eight numbered slots:
+
+```css
+:root {
+  --rui-chart-series-1: #6366f1;
+  --rui-chart-series-2: #ea580c;
+  /* … through --rui-chart-series-8 */
+}
+```
+
+Slots are assigned in order and **never cycled** — a fifth category takes slot 5, not slot 1 again.
+
+The default order is not a style choice. It was picked by validating every ordering of these hues against the lightness band, chroma floor, colorblind separation (protanopia and deuteranopia), a normal-vision floor, and 3:1 contrast, in both light and dark. If you swap in your own brand hues, re-validate rather than assuming the guarantees carry over.
+
+Forms where any two marks sit side by side — pie, donut, polar area, scatter, bubble — hold to a stricter all-pairs test that these hues clear for the **first four slots**. Past four categories, fold the tail into an "Other" bucket or switch to a bar chart rather than adding a ninth hue.
 
 ## Accessibility
 
-Every chart renders a visually hidden table with the underlying data for screen readers. Disable it with `accessible: false` if you provide your own alternative.
+Every chart renders a visually hidden table with the underlying data for screen readers, so no value is reachable only by hovering a mark. Comparison series get their own column. Disable it with `accessible: false` if you provide your own alternative.
+
+Charts also respect `prefers-reduced-motion` and skip their entry animation.
 
 ## Turbo support
 

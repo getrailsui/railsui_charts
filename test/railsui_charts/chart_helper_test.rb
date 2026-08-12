@@ -24,6 +24,47 @@ class ChartHelperTest < Minitest::Test
     assert_includes html, "Revenue"
     assert_includes html, "$1,000.00"
     assert_includes html, "+12.5%"
-    assert_includes html, "railsui-metric-change--positive"
+    assert_includes html, "railsui-metric-delta--positive"
+  end
+
+  def test_accessible_table_uses_categories_and_series_names
+    html = railsui_chart([{ x: "Jan", y: 10 }, { x: "Feb", y: 20 }], type: :line, label: "Revenue", id: "rev")
+
+    assert_includes html, "<th>Category</th>"
+    assert_includes html, "<th>Revenue</th>"
+    assert_includes html, "<td>Jan</td>"
+  end
+
+  def test_accessible_table_includes_comparison_series
+    html = railsui_chart([10, 20], type: :line, compare: [8, 16], label: "This week", compare_label: "Last week")
+
+    assert_includes html, "<th>This week</th>"
+    assert_includes html, "<th>Last week</th>"
+  end
+
+  def test_renders_metric_card
+    html = railsui_metric_card(
+      label: "MRR",
+      value: 18_450,
+      previous: 17_200,
+      format: :currency,
+      history: [{ x: "Aug 1", y: 16_000 }, { x: "Aug 2", y: 18_450 }],
+      updated_at: "Updated 1 second ago"
+    )
+
+    assert_includes html, "railsui-metric-card"
+    assert_includes html, "MRR"
+    assert_includes html, "$18,450.00"
+    assert_includes html, "$17,200.00 previous period"
+    # 18450 / 17200 - 1 == 7.27%
+    assert_includes html, "+7.27%"
+    assert_includes html, "Updated 1 second ago"
+  end
+
+  def test_metric_card_colours_delta_by_meaning_not_sign
+    html = railsui_metric_card(label: "Churn", value: 2.4, previous: 2.8, format: :percentage, positive_is_good: false)
+
+    # Churn fell, so the negative number is the good outcome.
+    assert_includes html, "railsui-metric-delta--positive"
   end
 end
