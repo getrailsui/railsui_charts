@@ -8,6 +8,7 @@ module RailsuiCharts
       ActiveSupport.on_load :action_controller do
         helper RailsuiCharts::ChartHelper
         helper RailsuiCharts::MetricHelper
+        helper RailsuiCharts::FilterHelper
       end
     end
 

@@ -83,10 +83,7 @@ export default class extends Controller {
   }
 
   applyFormatters(options) {
-    const format = options.format
-    if (!format || format === "number") return options
-
-    const formatter = this.formatterFor(format, options.currency)
+    const formatter = this.formatterFor(options.format || "number", options.currency)
     if (!formatter) return options
 
     const yaxis = Array.isArray(options.yaxis) ? options.yaxis : [options.yaxis || {}]
@@ -132,6 +129,13 @@ export default class extends Controller {
         return (value) => {
           if (value === null || value === undefined || isNaN(value)) return value
           return `${currency}${this.humanFormat(Number(value))}`
+        }
+      case "number":
+        // Computed series arrive as floats, so an unformatted axis renders
+        // "860.0000000000000". Delimited and trimmed by default.
+        return (value) => {
+          if (value === null || value === undefined || isNaN(value)) return value
+          return Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 })
         }
       default:
         return null

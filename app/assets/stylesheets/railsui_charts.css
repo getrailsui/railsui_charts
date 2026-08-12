@@ -70,6 +70,69 @@
   width: 100%;
 }
 
+/* ---------------------------------------------------------------- filters */
+
+/* One row above everything it scopes. Never inside a chart card — per-card
+   date pickers let two cards disagree about what "this week" means. */
+.railsui-chart-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.railsui-chart-filters__field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.railsui-chart-filters__label {
+  font-size: 0.8125rem;
+  color: var(--rui-chart-metric-muted);
+}
+
+.railsui-chart-filters__select {
+  padding: 0.3125rem 0.625rem;
+  border: 1px solid var(--rui-chart-border);
+  border-radius: 0.375rem;
+  background-color: var(--rui-chart-surface);
+  color: var(--rui-chart-metric-value);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.railsui-chart-filters__select:focus-visible {
+  outline: 2px solid var(--rui-chart-primary);
+  outline-offset: 1px;
+}
+
+.railsui-chart-filters__compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.8125rem;
+  color: var(--rui-chart-metric-muted);
+  cursor: pointer;
+}
+
+.railsui-chart-filters__checkbox {
+  width: 0.875rem;
+  height: 0.875rem;
+  accent-color: var(--rui-chart-primary);
+}
+
+.railsui-chart-filters__apply {
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--rui-chart-border);
+  border-radius: 0.375rem;
+  background-color: var(--rui-chart-surface);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+
 /* ---------------------------------------------------------------- metric */
 
 .railsui-metric {

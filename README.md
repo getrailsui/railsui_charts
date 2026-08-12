@@ -197,6 +197,73 @@ Direction and *goodness* are separate. A falling churn rate is a win, so pass
       format: :percentage, positive_is_good: false, history: @churn %>
 ```
 
+## Time series data
+
+`GROUP BY date` only returns rows that exist. A quiet Sunday disappears entirely and the line joins Saturday straight to Monday — a chart that looks fine and is wrong. `TimeSeries` emits every bucket in the range whether the data has it or not.
+
+```ruby
+series = RailsuiCharts::TimeSeries.new(
+  Signup.group("DATE(created_at)").count,
+  interval: :day,
+  range: 6.days.ago.to_date..Date.current
+)
+
+series.to_a    # => [{ x: "Aug 6", y: 12 }, { x: "Aug 7", y: 0 }, ...]
+series.total   # => 84
+```
+
+```erb
+<%= railsui_chart series, type: :area, format: :short_currency %>
+```
+
+Takes anything keyed by a date or time — Groupdate output, a plain `group(...).count`, or a Hash you built yourself. Keys are bucketed in `Time.zone`, and rows that collapse into one bucket are summed rather than overwriting each other. Intervals: `:hour`, `:day`, `:week`, `:month`.
+
+Pass `fill: nil` to leave real gaps in the line instead of zeroes.
+
+`TimeSeries.count(timestamps, interval: :day)` buckets raw timestamps. It's handy for small sets, but at scale group in SQL and hand the resulting Hash to `.new` rather than loading every row.
+
+### Level metrics and flow metrics
+
+`series.values.last` and `series.total` are not interchangeable. A **level** — MRR, active subscribers, a churn rate — reads its latest bucket. A **flow** — new trials, volume, signups — sums the window. Summing a level is meaningless, and taking the last bucket of a flow reports one day as if it were the whole period.
+
+## Filters
+
+Filters belong in one row above the charts, never inside a chart card — a per-card date picker invites two cards to disagree about what "this week" means.
+
+```ruby
+def dashboard
+  @filters = RailsuiCharts::Filters.new(params)
+  @signups = RailsuiCharts::TimeSeries.new(
+    Signup.group("DATE(created_at)").count,
+    interval: @filters.interval,
+    range: @filters.range
+  )
+end
+```
+
+```erb
+<%= turbo_frame_tag "dashboard" do %>
+  <%= railsui_chart_filters @filters, url: dashboard_path, frame: "dashboard" %>
+  <%= railsui_metric_card label: "Signups", value: @signups.total, history: @signups.to_a %>
+<% end %>
+```
+
+It submits as a plain GET form, so every slice is a shareable URL and the page still works with JavaScript off. With Turbo, only the frame re-renders.
+
+`Filters` resolves the window and refuses combinations that do not read — hourly buckets across twelve months is 8,760 points nobody can look at, so it falls back to the preset's own interval.
+
+| Method | Returns |
+|---|---|
+| `range` | the selected date range |
+| `interval` | `:hour`, `:day`, `:week`, or `:month` |
+| `compare?` | whether a comparison was requested |
+| `previous_range` | the equal-length window immediately before, or `nil` |
+| `summary` | `["Last 7 days", "Daily", "Compared to previous period"]` |
+
+Presets: last 24 hours, 7 days, 30 days, 90 days, 12 months, and month to date.
+
+Note that `previous_range` returns a *range*, not data — run your query again with it. Inventing the previous period's numbers is not the library's job.
+
 ## Supported chart types
 
 | Type | Description |
