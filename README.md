@@ -447,6 +447,15 @@ Every chart renders a visually hidden table with the underlying data for screen 
 
 Charts also respect `prefers-reduced-motion` and skip their entry animation.
 
+## Performance
+
+Charts draw when they scroll into view rather than all at once on page load, so
+a long dashboard does not spend its first seconds laying out charts nobody is
+looking at. Each one starts 300px before it reaches the viewport, and the
+helper reserves its height server-side so nothing shifts as they arrive.
+
+Browsers without `IntersectionObserver` render immediately, as before.
+
 ## Turbo support
 
 The Stimulus controller initializes charts on `connect` and destroys them on `disconnect`, so charts work inside Turbo Frames and Turbo Streams without leaks.
