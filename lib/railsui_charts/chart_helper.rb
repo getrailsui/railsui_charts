@@ -24,6 +24,47 @@ module RailsuiCharts
       end
     end
 
+    # One small chart per series, sharing a y-scale.
+    #
+    # This is the honest answer when there are more categories than a single
+    # chart can hold. Eight lines on one axis is a plate of spaghetti, and a
+    # ninth colour is not distinguishable from the others anyway — facets scale
+    # where colour does not.
+    #
+    #   <%= railsui_small_multiples @plans, type: :area, columns: 3 %>
+    def railsui_small_multiples(series, type: :line, height: 120, columns: 3, **options)
+      return railsui_chart_empty(**empty_options(options)) if ApexOptionsBuilder.blank?(series)
+
+      entries = Array(series)
+      shared = shared_scale(entries)
+
+      content_tag(:div, class: "railsui-small-multiples", style: "--rui-small-multiple-columns: #{columns.to_i}") do
+        safe_join(entries.each_with_index.map do |entry, index|
+          content_tag(:div, class: "railsui-small-multiple") do
+            safe_join([
+              content_tag(:p, entry[:name] || entry["name"] || "Series #{index + 1}", class: "railsui-small-multiple__title"),
+              # Every facet takes the same colour. The title carries identity
+              # here, so spending a hue on it would say nothing extra.
+              railsui_chart(entry[:data] || entry["data"], type: type, height: height,
+                                                           yaxis: shared.merge(tickAmount: 3), **options)
+            ])
+          end
+        end)
+      end
+    end
+
+    # Facets only compare if they share a scale. Left to themselves each one
+    # would fit its own data and a small series would look like a large one.
+    def shared_scale(entries)
+      values = entries.flat_map { |entry| Array(entry[:data] || entry["data"]).map { |point| ApexOptionsBuilder.value_of(point) } }.compact
+      return {} if values.empty?
+
+      min, max = values.minmax
+      return {} if min == max
+
+      { min: min, max: max }
+    end
+
     # Holds the chart's footprint so a card keeps its shape whether or not the
     # query came back with anything.
     def railsui_chart_empty(title: nil, description: nil, height: nil)

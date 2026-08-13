@@ -143,6 +143,39 @@ Data points accept an optional `:z` value for bubble size:
 <%= railsui_chart @page_views, type: :sparkline %>
 ```
 
+### Several series
+
+Pass an array of `{ name:, data: }` instead of a bare series. The `data` key is what tells the two apart.
+
+```erb
+<%= railsui_chart [
+      { name: "Starter", data: @starter },
+      { name: "Pro", data: @pro },
+      { name: "Enterprise", data: @enterprise }
+    ], type: :column %>
+```
+
+Each series takes the next palette slot in order, and two or more always carry a legend — colour is never the only thing telling them apart.
+
+### Stacking
+
+```erb
+<%= railsui_chart @plans, type: :column, stacked: true %>
+<%= railsui_chart @plans, type: :column, stacked: :percent %>
+```
+
+Stacking answers "what is this made of over time", which a grouped chart cannot. `:percent` switches from totals to share. Segments separate with a 2px gap in the surface colour rather than a stroke, so the divider never reads as data.
+
+### Small multiples
+
+```erb
+<%= railsui_small_multiples @plans, type: :area, columns: 3 %>
+```
+
+One small chart per series, **sharing a y-scale**. This is the honest answer when there are more categories than a single chart can hold: eight lines on one axis is a plate of spaghetti, and a ninth colour is not distinguishable from the others anyway. Facets scale where colour does not.
+
+Every facet takes the same colour, because the title carries identity — spending a hue on it would say nothing extra. The shared scale is the point: left to themselves, each facet would fit its own data and a small series would look like a large one.
+
 ### Comparing against a previous period
 
 Pass `compare:` a second series and it rides underneath the first as a dashed,

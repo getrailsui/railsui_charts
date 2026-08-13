@@ -20,6 +20,7 @@ module RailsuiCharts
     # and is not blank — a quiet day still has something to say.
     def self.blank?(data)
       return true if data.nil?
+      return data.all? { |series| blank?(series[:data] || series["data"]) } if series_form?(data)
 
       points = data.respond_to?(:to_a) && !data.is_a?(Array) ? data.to_a : Array(data)
       return true if points.empty?
@@ -36,14 +37,23 @@ module RailsuiCharts
     end
 
     def initialize(data, type: :line, compare: nil, **options)
-      @data = normalize_data(data)
+      @series = extract_series(data)
+      @data = @series.first[:data]
       @compare = compare.nil? ? nil : normalize_data(compare)
       @type = validate_type(type)
       @options = options
     end
 
+    # A single series can be given bare; several arrive as an array of
+    # `{ name:, data: }`. The `data` key is what tells the two apart, since a
+    # bare series is an array of values or of `{ x:, y: }` points.
+    def self.series_form?(data)
+      data.is_a?(Array) && data.any? &&
+        data.all? { |entry| entry.is_a?(Hash) && (entry.key?(:data) || entry.key?("data")) }
+    end
+
     def build
-      config = deep_merge(base_options, chart_specific_options, comparison_options, user_options)
+      config = deep_merge(base_options, chart_specific_options, comparison_options, multi_series_options, stacked_options, user_options)
       return config if sparkline?
 
       # Derived from the finished config, not from the defaults. Apex swaps a
@@ -59,6 +69,22 @@ module RailsuiCharts
       type = type.to_sym
       raise ArgumentError, "Unsupported chart type: #{type}. Supported: #{SUPPORTED_TYPES.join(', ')}" unless SUPPORTED_TYPES.include?(type)
       type
+    end
+
+    def extract_series(data)
+      return [{ name: nil, data: normalize_data(data) }] unless self.class.series_form?(data)
+
+      data.map do |entry|
+        { name: entry[:name] || entry["name"], data: normalize_data(entry[:data] || entry["data"]) }
+      end
+    end
+
+    def multi?
+      @series.length > 1
+    end
+
+    def all_points
+      @series.flat_map { |series| series[:data] }
     end
 
     def normalize_data(data)
@@ -258,6 +284,42 @@ module RailsuiCharts
       }
     end
 
+    # Two or more series always carry a legend. Colour alone is never the only
+    # thing telling them apart.
+    def multi_series_options
+      return {} unless multi?
+
+      { legend: series_legend, tooltip: { shared: true, intersect: false } }
+    end
+
+    # Stacking answers "what is this made of over time", which a grouped chart
+    # cannot. `stacked: :percent` switches from totals to share.
+    def stacked_options
+      return {} unless @options[:stacked]
+
+      {
+        chart: { stacked: true, stackType: @options[:stacked].to_s == "percent" ? "100%" : "normal" },
+        # Segments separate with a gap in the surface colour rather than a
+        # stroke drawn around them, so the divider never reads as data.
+        stroke: { show: true, width: 2, colors: [surface_color] },
+        plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: "end" } }
+      }
+    end
+
+    def series_legend
+      {
+        show: true,
+        position: "top",
+        horizontalAlign: "left",
+        offsetX: -8,
+        fontFamily: "inherit",
+        fontSize: "12px",
+        labels: { colors: config_color(:text) },
+        markers: { width: 8, height: 8, radius: 8, offsetX: -2 },
+        itemMargin: { horizontal: 8, vertical: 0 }
+      }
+    end
+
     def comparison_fill
       # The comparison series gets a flat gradient rather than `opacity: 0`,
       # which would take its stroke down with it.
@@ -276,21 +338,11 @@ module RailsuiCharts
     def comparison_legend
       return { show: false } if sparkline?
 
-      {
-        show: true,
-        position: "top",
-        horizontalAlign: "left",
-        offsetX: -8,
-        fontFamily: "inherit",
-        fontSize: "12px",
-        labels: { colors: config_color(:text) },
-        markers: { width: 8, height: 8, radius: 8, offsetX: -2 },
-        itemMargin: { horizontal: 8, vertical: 0 }
-      }
+      series_legend
     end
 
     def comparing?
-      !@compare.nil? && !@compare.empty? && COMPARABLE_TYPES.include?(@type)
+      !@compare.nil? && !@compare.empty? && !multi? && COMPARABLE_TYPES.include?(@type)
     end
 
     def bar_plot_options
@@ -353,16 +405,20 @@ module RailsuiCharts
     end
 
     def series_for_type
+      return series_values if circular?
+
+      plotted = @series.each_with_index.map do |series, index|
+        { name: series[:name] || (index.zero? ? series_label : "Series #{index + 1}"), data: points_for(series[:data]) }
+      end
+
+      comparing? ? plotted + [{ name: compare_label, data: @compare.map { |point| point[:y] } }] : plotted
+    end
+
+    def points_for(points)
       case @type
-      when :pie, :donut, :polar_area
-        series_values
-      when :scatter
-        [{ name: series_label, data: scatter_series }]
-      when :bubble
-        [{ name: series_label, data: bubble_series }]
-      else
-        current = { name: series_label, data: series_values }
-        comparing? ? [current, { name: compare_label, data: @compare.map { |d| d[:y] } }] : [current]
+      when :scatter then points.map { |point| [point[:x], point[:y]] }
+      when :bubble then points.map { |point| { x: point[:x], y: point[:y], z: point[:z] || 1 } }
+      else points.map { |point| point[:y] }
       end
     end
 
@@ -414,7 +470,7 @@ module RailsuiCharts
       # Bubbles get a whole step of headroom because their radius is drawn
       # around the point. Scatter dots are small enough that pixel padding on
       # the grid keeps them clear of the axis without distorting the ticks.
-      bounds = nice_bounds(@data.map { |d| d[axis] }, 5, pad: bubble?)
+      bounds = nice_bounds(all_points.map { |point| point[axis] }, 5, pad: bubble?)
 
       if axis == :x
         return base.merge(bounds_for(bounds, :x), type: "numeric", crosshairs: crosshair_options, tooltip: { enabled: false })
@@ -547,7 +603,7 @@ module RailsuiCharts
     end
 
     def colors_for_type
-      return categorical_palette if circular? || radar? || bubble?
+      return categorical_palette if circular? || radar? || bubble? || multi?
       [config_color(:primary)]
     end
 
