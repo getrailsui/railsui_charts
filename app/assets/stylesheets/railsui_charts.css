@@ -33,8 +33,12 @@
   --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.65);
   --rui-chart-positive: #047857;
   --rui-chart-negative: #b91c1c;
-  --rui-chart-tooltip-bg: #1e293b;
-  --rui-chart-tooltip-text: #f8fafc;
+  --rui-chart-tooltip-bg: #ffffff;
+  --rui-chart-tooltip-text: #111827;
+  --rui-chart-tooltip-muted: #6b7280;
+  --rui-chart-tooltip-border: rgba(17, 24, 39, 0.14);
+  --rui-chart-tooltip-radius: 0.5rem;
+  --rui-chart-tooltip-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,8 +57,11 @@
     --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.07);
     --rui-chart-positive: #34d399;
     --rui-chart-negative: #f87171;
-    --rui-chart-tooltip-bg: #0f172a;
-    --rui-chart-tooltip-text: #f1f5f9;
+    --rui-chart-tooltip-bg: #171717;
+    --rui-chart-tooltip-text: #f9fafb;
+    --rui-chart-tooltip-muted: #9ca3af;
+    --rui-chart-tooltip-border: rgba(255, 255, 255, 0.16);
+    --rui-chart-tooltip-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -76,8 +83,11 @@
   --rui-chart-skeleton-sheen: rgba(255, 255, 255, 0.07);
   --rui-chart-positive: #34d399;
   --rui-chart-negative: #f87171;
-  --rui-chart-tooltip-bg: #0f172a;
-  --rui-chart-tooltip-text: #f1f5f9;
+  --rui-chart-tooltip-bg: #171717;
+  --rui-chart-tooltip-text: #f9fafb;
+  --rui-chart-tooltip-muted: #9ca3af;
+  --rui-chart-tooltip-border: rgba(255, 255, 255, 0.16);
+  --rui-chart-tooltip-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .railsui-chart {
@@ -571,10 +581,10 @@
    lets the tooltip sit on the same surface as the card it belongs to. */
 .railsui-chart .apexcharts-tooltip.apexcharts-theme-light,
 .railsui-chart .apexcharts-tooltip.apexcharts-theme-dark {
-  border: 1px solid var(--rui-chart-border) !important;
-  border-radius: 0.5rem !important;
-  background: var(--rui-chart-surface) !important;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  border: 1px solid var(--rui-chart-tooltip-border) !important;
+  border-radius: var(--rui-chart-tooltip-radius) !important;
+  background: var(--rui-chart-tooltip-bg) !important;
+  box-shadow: var(--rui-chart-tooltip-shadow) !important;
   overflow: hidden;
 }
 
@@ -584,7 +594,7 @@
   font-family: inherit;
   font-size: 0.75rem;
   line-height: 1rem;
-  color: var(--rui-chart-metric-value);
+  color: var(--rui-chart-tooltip-text);
 }
 
 .railsui-chart-tooltip__head {
@@ -594,7 +604,7 @@
   gap: 0.75rem;
   padding-bottom: 0.375rem;
   margin-bottom: 0.375rem;
-  border-bottom: 1px solid var(--rui-chart-border);
+  border-bottom: 1px solid var(--rui-chart-tooltip-border);
 }
 
 .railsui-chart-tooltip__title {
@@ -607,7 +617,7 @@
 
 .railsui-chart-tooltip__delta--positive { color: var(--rui-chart-positive); }
 .railsui-chart-tooltip__delta--negative { color: var(--rui-chart-negative); }
-.railsui-chart-tooltip__delta--neutral { color: var(--rui-chart-metric-muted); }
+.railsui-chart-tooltip__delta--neutral { color: var(--rui-chart-tooltip-muted); }
 
 .railsui-chart-tooltip__rows {
   width: 100%;
@@ -621,7 +631,7 @@
   padding: 0.0625rem 0.75rem 0.0625rem 0;
   font-weight: 400;
   text-align: left;
-  color: var(--rui-chart-metric-muted);
+  color: var(--rui-chart-tooltip-muted);
   white-space: nowrap;
 }
 

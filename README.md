@@ -347,6 +347,36 @@ The default order is not a style choice. It was picked by validating every order
 
 Forms where any two marks sit side by side — pie, donut, polar area, scatter, bubble — hold to a stricter all-pairs test that these hues clear for the **first four slots**. Past four categories, fold the tail into an "Other" bucket or switch to a bar chart rather than adding a ninth hue.
 
+## Tooltips
+
+Charts render their own tooltip rather than Apex's. It leads with the metric and how much it moved, then lists dated rows with values right-aligned, and it draws from CSS variables so it follows the theme instead of being a dark slab on a light page.
+
+Three options control what it says:
+
+```erb
+<%= railsui_chart @revenue, type: :line,
+      tooltip_heading: :category,   # :series or :category — defaults to :series when comparing
+      tooltip_delta: false,         # hide the change badge
+      tooltip_style: false %>       # hand the tooltip back to Apex entirely
+```
+
+Appearance is CSS variables, so a tooltip can be restyled without touching the cards around it:
+
+```css
+:root {
+  --rui-chart-tooltip-bg: #ffffff;
+  --rui-chart-tooltip-text: #111827;
+  --rui-chart-tooltip-muted: #6b7280;
+  --rui-chart-tooltip-border: rgba(17, 24, 39, 0.14);
+  --rui-chart-tooltip-radius: 0.5rem;
+  --rui-chart-tooltip-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+```
+
+The change badge uses `--rui-chart-positive` and `--rui-chart-negative`. Direction and goodness are separate here as they are on the card: `railsui_metric_card` passes `positive_is_good` down, so a falling churn rate reads green in the tooltip too.
+
+Passing your own `tooltip: { custom: ... }` also takes precedence — the built-in one steps aside.
+
 ## States
 
 A new account has no data, a Turbo frame spends a moment fetching, and queries time out. Each state holds the chart's footprint so nothing below it moves.

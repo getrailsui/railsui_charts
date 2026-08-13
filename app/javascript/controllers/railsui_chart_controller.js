@@ -73,11 +73,16 @@ export default class extends Controller {
   // built from the same CSS variables as everything else, so it follows the
   // theme, and it leads with what changed rather than with the date.
   applyTooltip(options) {
+    // `tooltip_style: false` hands the tooltip back to Apex; passing your own
+    // `tooltip.custom` also wins.
+    if (options.tooltip_style === false) return options
     if (options.tooltip?.custom || options.chart?.sparkline?.enabled) return options
 
     const format = this.formatterFor(options.format || "number", options.currency)
     const comparedDates = options.compare_categories || []
     const upIsGood = options.trend_up_is_good !== false
+    const showDelta = options.tooltip_delta !== false
+    const headingMode = options.tooltip_heading
 
     return {
       ...options,
@@ -98,8 +103,13 @@ export default class extends Controller {
             color: w.globals.colors[index]
           }))
 
-          const heading = comparing ? w.globals.seriesNames[0] : labels?.[dataPointIndex]
-          return this.tooltipMarkup(heading, rows, comparing ? this.tooltipDelta(point(0), point(1), upIsGood) : null, format)
+          // Auto: a comparison leads with the metric, since the rows carry the
+          // dates. Anything else leads with the point being hovered.
+          const leadsWithSeries = headingMode ? headingMode === "series" : comparing
+          const heading = leadsWithSeries ? w.globals.seriesNames[0] : labels?.[dataPointIndex]
+          const delta = showDelta && comparing ? this.tooltipDelta(point(0), point(1), upIsGood) : null
+
+          return this.tooltipMarkup(heading, rows, delta, format)
         }
       }
     }
