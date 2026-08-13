@@ -316,4 +316,33 @@ class ApexOptionsBuilderTest < Minitest::Test
     refute config[:xaxis].key?(:min)
     assert_equal 5, config[:xaxis][:tickAmount]
   end
+
+  def test_a_registered_type_can_keep_its_labels_in_the_data
+    RailsuiCharts.config.register_type(:treemap, points: :labelled)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new(
+      [{ name: "Spend", data: [{ x: "Payroll", y: 48 }, { x: "Hosting", y: 12 }] }],
+      type: :treemap
+    ).build
+
+    # Flattening these to [48, 12] and moving the names onto the axis loses
+    # them entirely — a treemap prints its labels inside the rectangles.
+    assert_equal [{ x: "Payroll", y: 48 }, { x: "Hosting", y: 12 }], config[:series].first[:data]
+  ensure
+    RailsuiCharts.config.labelled_point_types.delete(:treemap)
+    RailsuiCharts.config.extra_types.delete(:treemap)
+  end
+
+  def test_registering_a_type_leaves_ordinary_ones_flattened
+    RailsuiCharts.config.register_type(:sankey)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new(
+      [{ name: "Spend", data: [{ x: "Payroll", y: 48 }] }],
+      type: :sankey
+    ).build
+
+    assert_equal [48], config[:series].first[:data]
+  ensure
+    RailsuiCharts.config.extra_types.delete(:sankey)
+  end
 end

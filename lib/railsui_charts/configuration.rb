@@ -3,6 +3,7 @@
 module RailsuiCharts
   class Configuration
     attr_accessor :default_height, :default_currency, :colors, :series_colors, :theme_css_prefix, :extra_types
+    attr_accessor :labelled_point_types
 
     # Categorical hues carry identity, so the order is the colourblind-safety
     # mechanism rather than a style choice — it was picked by validating every
@@ -25,6 +26,7 @@ module RailsuiCharts
       @default_currency = "$"
       # Chart types registered by an extension, such as Rails UI Charts Pro.
       @extra_types = []
+      @labelled_point_types = []
       @theme_css_prefix = "--rui-chart"
       @series_colors = (1..SERIES_COUNT).map { |i| "var(--rui-chart-series-#{i}, #{SERIES_FALLBACKS[i - 1]})" }
       @colors = {
@@ -39,5 +41,23 @@ module RailsuiCharts
         surface: "var(--rui-chart-surface, #ffffff)"
       }
     end
+    # Register a chart type this gem does not ship, so it passes validation and
+    # is drawn through the same options builder as everything else rather than
+    # around it.
+    #
+    #   RailsuiCharts.config.register_type :treemap, points: :labelled
+    #
+    # `points: :labelled` keeps each point as {x:, y:}. Most types put the label
+    # on the axis and send bare values, but a treemap draws its labels inside
+    # the rectangles, so they have to stay in the data.
+    def register_type(type, points: :values)
+      type = type.to_sym
+
+      @extra_types |= [type]
+      @labelled_point_types |= [type] if points == :labelled
+
+      type
+    end
+
   end
 end

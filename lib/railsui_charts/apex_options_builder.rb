@@ -423,8 +423,17 @@ module RailsuiCharts
       case @type
       when :scatter then points.map { |point| [point[:x], point[:y]] }
       when :bubble then points.map { |point| { x: point[:x], y: point[:y], z: point[:z] || 1 } }
-      else points.map { |point| point[:y] }
+      else
+        # A registered type may draw its own labels rather than read them off an
+        # axis, in which case flattening the point to a value loses them.
+        return points.map { |point| { x: point[:x], y: point[:y] } } if labelled_points?
+
+        points.map { |point| point[:y] }
       end
+    end
+
+    def labelled_points?
+      RailsuiCharts.config.labelled_point_types.include?(@type)
     end
 
     def series_label
