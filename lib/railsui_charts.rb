@@ -13,7 +13,7 @@ module RailsuiCharts
   autoload :MetricHelper, "railsui_charts/metric_helper"
   autoload :FilterHelper, "railsui_charts/filter_helper"
   autoload :Filters, "railsui_charts/filters"
-  autoload :TimeSeries, "railsui_charts/time_series"
+  autoload :Interval, "railsui_charts/interval"
 
   mattr_accessor :config
   @@config = RailsuiCharts::Configuration.new

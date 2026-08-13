@@ -54,7 +54,7 @@ module RailsuiCharts
     def previous_range
       return unless compare?
 
-      TimeSeries.preceding(range, interval: interval)
+      Interval.preceding(range, interval: interval)
     end
 
     def presets
@@ -94,7 +94,7 @@ module RailsuiCharts
 
     def trailing_range
       finish = @preset.unit == :hour ? current_time : @today
-      start = (@preset.length - 1).times.inject(finish) { |value, _| TimeSeries.step_back(value, @preset.interval) }
+      start = (@preset.length - 1).times.inject(finish) { |value, _| Interval.step_back(value, @preset.interval) }
 
       start..finish
     end
