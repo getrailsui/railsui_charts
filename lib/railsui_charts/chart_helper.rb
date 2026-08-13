@@ -19,6 +19,10 @@ module RailsuiCharts
       content_tag(:div,
                   id: id,
                   class: "railsui-chart",
+                  # Charts draw when they scroll into view, so the space has to
+                  # be held from the start. Without it the page is short on
+                  # load and grows under the reader as they scroll.
+                  style: reserved_height(config),
                   data: { controller: "railsui-chart", "railsui-chart-options-value": config.to_json }) do
         table
       end
@@ -105,6 +109,13 @@ module RailsuiCharts
           ].compact)
         end
       end
+    end
+
+    def reserved_height(config)
+      height = config.dig(:chart, :height)
+      return if height.blank?
+
+      "min-height: #{height.to_i}px"
     end
 
     def state_height(height)

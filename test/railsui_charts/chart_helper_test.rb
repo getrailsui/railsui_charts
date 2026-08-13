@@ -87,4 +87,14 @@ class ChartHelperTest < Minitest::Test
     # Churn fell, so the negative number is the good outcome.
     assert_includes html, "railsui-metric-delta--positive"
   end
+
+  def test_the_chart_reserves_its_height_before_it_draws
+    # Charts draw on scroll, so the space has to be held from the start or the
+    # page grows under the reader.
+    assert_includes railsui_chart([1, 2, 3], type: :line, height: 340), "min-height: 340px"
+  end
+
+  def test_reserved_height_falls_back_to_the_configured_default
+    assert_includes railsui_chart([1, 2, 3], type: :line), "min-height: #{RailsuiCharts.config.default_height}px"
+  end
 end
