@@ -232,32 +232,21 @@ Direction and *goodness* are separate. A falling churn rate is a win, so pass
 
 ## Time series data
 
-`GROUP BY date` only returns rows that exist. A quiet Sunday disappears entirely and the line joins Saturday straight to Monday — a chart that looks fine and is wrong. `TimeSeries` emits every bucket in the range whether the data has it or not.
+`railsui_chart` takes a grouped hash straight from the database:
 
 ```ruby
-series = RailsuiCharts::TimeSeries.new(
-  Signup.group("DATE(created_at)").count,
-  interval: :day,
-  range: 6.days.ago.to_date..Date.current
-)
-
-series.to_a    # => [{ x: "Aug 6", y: 12 }, { x: "Aug 7", y: 0 }, ...]
-series.total   # => 84
+@revenue = Order.paid.where(created_at: range)
+                .group("TO_CHAR(created_at, 'Mon')").sum(:total)
 ```
 
 ```erb
-<%= railsui_chart series, type: :area, format: :short_currency %>
+<%= railsui_chart @revenue, type: :column, format: :short_currency %>
 ```
 
-Takes anything keyed by a date or time — Groupdate output, a plain `group(...).count`, or a Hash you built yourself. Keys are bucketed in `Time.zone`, and rows that collapse into one bucket are summed rather than overwriting each other. Intervals: `:hour`, `:day`, `:week`, `:month`.
-
-Pass `fill: nil` to leave real gaps in the line instead of zeroes.
-
-`TimeSeries.count(timestamps, interval: :day)` buckets raw timestamps. It's handy for small sets, but at scale group in SQL and hand the resulting Hash to `.new` rather than loading every row.
-
-### Level metrics and flow metrics
-
-`series.values.last` and `series.total` are not interchangeable. A **level** — MRR, active subscribers, a churn rate — reads its latest bucket. A **flow** — new trials, volume, signups — sums the window. Summing a level is meaningless, and taking the last bucket of a flow reports one day as if it were the whole period.
+Note that a `GROUP BY` only returns rows that exist, so a month with no orders
+is simply absent and the axis quietly shortens. Filling those gaps —
+along with bucketing, summing rows that collapse together, and labelling — is
+what `RailsuiChartsPro::TimeSeries` does. See [Full access](#full-access).
 
 ## Filters
 
@@ -266,18 +255,15 @@ Filters belong in one row above the charts, never inside a chart card — a per-
 ```ruby
 def dashboard
   @filters = RailsuiCharts::Filters.new(params)
-  @signups = RailsuiCharts::TimeSeries.new(
-    Signup.group("DATE(created_at)").count,
-    interval: @filters.interval,
-    range: @filters.range
-  )
+  @signups = Signup.where(created_at: @filters.range)
+                   .group("TO_CHAR(created_at, 'Mon DD')").count
 end
 ```
 
 ```erb
 <%= turbo_frame_tag "dashboard" do %>
   <%= railsui_chart_filters @filters, url: dashboard_path, frame: "dashboard" %>
-  <%= railsui_metric_card label: "Signups", value: @signups.total, history: @signups.to_a %>
+  <%= railsui_metric_card label: "Signups", value: @signups.values.sum, history: @signups %>
 <% end %>
 ```
 
@@ -295,7 +281,7 @@ It submits as a plain GET form, so every slice is a shareable URL and the page s
 
 Presets: last 24 hours, 7 days, 30 days, 90 days, 12 months, and month to date.
 
-Note that `previous_range` returns a *range*, not data — run your query again with it. Inventing the previous period's numbers is not the library's job.
+`previous_range` returns a *range*, not data — run your query again with it. Inventing the previous period's numbers is not the library's job.
 
 ## Supported chart types
 
@@ -467,15 +453,24 @@ The Stimulus controller initializes charts on `connect` and destroys them on `di
 
 ## Full access
 
-A Rails UI membership extends the open-source gem with:
+A Rails UI membership adds `railsui_charts_pro`, which builds on this gem
+rather than replacing it:
 
-- Funnel and cohort charts
-- Reporting and export tools (CSV, PDF)
-- Dashboard compositions and implementation recipes
-- Commercial visual presets
-- Priority support and upgrade guidance
+- **Time series** — `TimeSeries` fills the gaps a `GROUP BY` leaves behind, buckets to any interval, and sums rows that collapse together
+- **Waterfall and funnel** — the bridging arithmetic and the ordinal ramp handled
+- **Cohort and retention grids** — monthly cohorts on a single-hue ramp
+- **Treemap and bar lists** — part-to-whole past the four-slot cap, and the ranked row every overview ends with
+- **Annotations** — deploy markers, incident bands, and target lines
+- **Live updates and export** — Turbo Stream broadcasts, CSV, PNG, PDF, and scheduled digests
 
-[Learn more and get full access](https://railsui.com/pricing)
+Installed over GitHub with your existing credentials — no license key, nothing
+calls home:
+
+```ruby
+gem "railsui_charts_pro", github: "getrailsui/railsui_charts_pro"
+```
+
+[Get full access](https://railsui.com/pricing)
 
 ## License
 
