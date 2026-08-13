@@ -8,13 +8,15 @@ export default class extends Controller {
     // Bind before the first render: the theme getter reads the media query, so
     // rendering first paints every chart light on a dark OS.
     this.bindThemeListeners()
-    this.render()
 
     // Apex measures the element as it renders. Anything hidden at connect — a
     // closed dialog, a collapsed panel — measures zero and draws nothing, so
-    // whatever reveals it says so and the chart lays itself out.
+    // there is no point building it yet. Whatever reveals it says so, and the
+    // chart lays itself out then.
     this.refresh = this.refresh.bind(this)
     this.element.addEventListener("railsui-chart:refresh", this.refresh)
+
+    if (this.measurable) this.render()
   }
 
   disconnect() {
@@ -24,7 +26,13 @@ export default class extends Controller {
   }
 
   refresh() {
-    this.render()
+    if (this.measurable) this.render()
+  }
+
+  // Anything inside a `display: none` subtree — a closed <dialog>, a hidden
+  // tab panel — reports no client rects.
+  get measurable() {
+    return this.element.getClientRects().length > 0
   }
 
   render() {
