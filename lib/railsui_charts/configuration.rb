@@ -2,7 +2,7 @@
 
 module RailsuiCharts
   class Configuration
-    attr_accessor :default_height, :default_currency, :colors, :series_colors, :theme_css_prefix
+    attr_accessor :default_height, :default_currency, :colors, :series_colors, :theme_css_prefix, :extra_types
 
     # Categorical hues carry identity, so the order is the colourblind-safety
     # mechanism rather than a style choice — it was picked by validating every
@@ -23,6 +23,8 @@ module RailsuiCharts
     def initialize
       @default_height = 250
       @default_currency = "$"
+      # Chart types registered by an extension, such as Rails UI Charts Pro.
+      @extra_types = []
       @theme_css_prefix = "--rui-chart"
       @series_colors = (1..SERIES_COUNT).map { |i| "var(--rui-chart-series-#{i}, #{SERIES_FALLBACKS[i - 1]})" }
       @colors = {

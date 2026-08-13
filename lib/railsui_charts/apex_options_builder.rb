@@ -65,9 +65,14 @@ module RailsuiCharts
 
     private
 
+    # Rails UI Charts Pro registers the forms this gem does not model, so a
+    # treemap arrives here as a first-class type rather than as raw Apex config
+    # smuggled past the builder.
     def validate_type(type)
       type = type.to_sym
-      raise ArgumentError, "Unsupported chart type: #{type}. Supported: #{SUPPORTED_TYPES.join(', ')}" unless SUPPORTED_TYPES.include?(type)
+      allowed = SUPPORTED_TYPES + RailsuiCharts.config.extra_types
+      raise ArgumentError, "Unsupported chart type: #{type}. Supported: #{allowed.join(', ')}" unless allowed.include?(type)
+
       type
     end
 
