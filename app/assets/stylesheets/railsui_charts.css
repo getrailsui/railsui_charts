@@ -138,17 +138,35 @@
   padding: 0;
 }
 
-/* Gridlines rather than a plain block, so the placeholder reads as a chart
-   arriving instead of generic furniture. */
-.railsui-chart-skeleton {
+/* Shared placeholder surface: a fill plus the sheen that crosses it. */
+.railsui-chart-skeleton,
+.railsui-skeleton-bar {
   position: relative;
+  overflow: hidden;
+  background-color: var(--rui-chart-skeleton);
+}
+
+/* Stand-ins for the card's text. The plot area is left empty on purpose — a
+   slab where the chart goes claims more about the shape of the data than a
+   loading state can know. */
+.railsui-skeleton-bar {
+  display: block;
+  border-radius: 0.25rem;
+}
+
+.railsui-skeleton-bar--label { width: 4.5rem; height: 0.6875rem; margin-bottom: 0.4375rem; }
+.railsui-skeleton-bar--value { width: 9.5rem; height: 1.375rem; margin-bottom: 0.5rem; }
+.railsui-skeleton-bar--meta { width: 7rem; height: 0.75rem; }
+.railsui-skeleton-bar--footer { width: 6.5rem; height: 0.75rem; }
+
+/* Gridlines rather than a plain block, so a standalone chart placeholder still
+   reads as a chart arriving. */
+.railsui-chart-skeleton {
   display: block;
   width: 100%;
   min-height: inherit;
   align-self: stretch;
-  overflow: hidden;
   border-radius: 0.5rem;
-  background-color: var(--rui-chart-skeleton);
   /* Its own line colour, softer than a real gridline. A placeholder should
      suggest the shape of what is coming without competing with the charts
      already on screen around it. */
@@ -164,7 +182,8 @@
 /* A sheen sweeping across, rather than the whole block breathing. Pulsing
    opacity dims the gridlines too and reads as a broken element; a sweep reads
    as work in progress. */
-.railsui-chart-skeleton::after {
+.railsui-chart-skeleton::after,
+.railsui-skeleton-bar::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -203,7 +222,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   /* The skeleton still reads as a placeholder standing still. */
-  .railsui-chart-skeleton::after {
+  .railsui-chart-skeleton::after,
+  .railsui-skeleton-bar::after {
     animation: none;
     opacity: 0.4;
     transform: none;

@@ -49,6 +49,25 @@ module RailsuiCharts
       card
     end
 
+    # The card's own placeholder. It stands in for the text that is coming and
+    # leaves the plot area empty: a grey slab where the chart goes claims more
+    # about the shape of the data than a loading state can know.
+    def railsui_metric_card_skeleton(chart_height: 180, footer: true, label: "Loading metric")
+      content_tag(:div, class: "railsui-metric-card", role: "status", aria: { busy: true, label: label }) do
+        safe_join([
+          content_tag(:div, class: "railsui-metric-card__head") do
+            safe_join(%w[label value meta].map do |part|
+              content_tag(:span, "", class: "railsui-skeleton-bar railsui-skeleton-bar--#{part}", aria: { hidden: true })
+            end)
+          end,
+          content_tag(:div, "", class: "railsui-metric-card__chart", style: "min-height: #{chart_height.to_i}px"),
+          footer ? content_tag(:div, class: "railsui-metric-card__footer") do
+            content_tag(:span, "", class: "railsui-skeleton-bar railsui-skeleton-bar--footer", aria: { hidden: true })
+          end : nil
+        ].compact)
+      end
+    end
+
     private
 
     def metric_card_head(label, value, change, previous, format, positive_is_good)

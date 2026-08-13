@@ -402,10 +402,13 @@ A series of zeroes is **not** empty. A quiet day still has something to say, and
 ### Loading
 
 ```erb
-<%= railsui_chart_skeleton height: 240 %>
+<%= railsui_metric_card_skeleton chart_height: 180 %>
+<%= railsui_chart_skeleton height: 240, type: :donut %>
 ```
 
-Render it server-side and let a Turbo Stream swap in the real chart.
+Render one server-side and let a Turbo Stream swap in the real thing.
+
+The card skeleton stands in for the text that is coming and leaves the plot area empty — a slab where the chart goes claims more about the shape of the data than a loading state can know. A standalone chart skeleton keeps faint gridlines, since it has nothing else to say it is a chart, and takes the shape of its `type:`.
 
 On **refetch**, don't reach for the skeleton. Any element inside a container marked `aria-busy="true"` — which is what Turbo does to a frame while it loads — holds its previous render at reduced opacity instead. The numbers stay on screen and the layout stays still; a skeleton would throw the chart away and flash.
 

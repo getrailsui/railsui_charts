@@ -55,6 +55,20 @@ class StatesTest < Minitest::Test
     end
   end
 
+  def test_metric_card_skeleton_stands_in_for_text_not_for_the_plot
+    html = railsui_metric_card_skeleton(chart_height: 180)
+
+    assert_includes html, "railsui-metric-card"
+    assert_includes html, 'aria-busy="true"'
+    %w[label value meta footer].each do |part|
+      assert_includes html, "railsui-skeleton-bar--#{part}"
+    end
+
+    # The plot area holds its height and stays empty.
+    assert_includes html, "min-height: 180px"
+    refute_includes html, "railsui-chart-skeleton"
+  end
+
   def test_error_state_reads_as_a_failure_not_an_absence
     html = railsui_chart_error(description: "The query timed out.")
 
