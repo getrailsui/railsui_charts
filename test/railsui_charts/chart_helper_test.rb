@@ -97,4 +97,23 @@ class ChartHelperTest < Minitest::Test
   def test_reserved_height_falls_back_to_the_configured_default
     assert_includes railsui_chart([1, 2, 3], type: :line), "min-height: #{RailsuiCharts.config.default_height}px"
   end
+
+  def test_a_labelled_point_reads_as_its_value_alone
+    RailsuiCharts.config.register_type(:treemap, points: :labelled)
+
+    html = railsui_chart([{ name: "Spend", data: [{ x: "Payroll", y: 48 }] }], type: :treemap)
+
+    # The label is already the row heading; repeating it turns the value cell
+    # into "Payroll, 48" for anyone listening.
+    assert_includes html, "<td>Payroll</td><td>48</td>"
+  ensure
+    RailsuiCharts.config.labelled_point_types.delete(:treemap)
+    RailsuiCharts.config.extra_types.delete(:treemap)
+  end
+
+  def test_a_bubble_still_reads_all_three_numbers
+    html = railsui_chart([{ name: "Segments", data: [{ x: 5, y: 10, z: 20 }] }], type: :bubble)
+
+    assert_includes html, "5, 10, 20"
+  end
 end

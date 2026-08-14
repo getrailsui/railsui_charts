@@ -183,7 +183,11 @@ module RailsuiCharts
     def cell_value(value)
       case value
       when Array then value.join(", ")
-      when Hash then value.values_at(:x, :y, :z).compact.join(", ")
+      when Hash
+        # A bubble carries three numbers that all mean something here. Anything
+        # else keeps its label in the category column already, so repeating it
+        # beside the value just reads as "A, 6" to a screen reader.
+        value.key?(:z) ? value.values_at(:x, :y, :z).compact.join(", ") : value[:y]
       else value
       end
     end
