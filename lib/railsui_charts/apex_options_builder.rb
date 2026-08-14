@@ -136,7 +136,7 @@ module RailsuiCharts
           # repaint loop. Window resizes still redraw.
           redrawOnParentResize: false,
           redrawOnWindowResize: true,
-          fontFamily: "inherit",
+          fontFamily: font_family,
           background: "transparent"
         },
         series: series_for_type,
@@ -169,8 +169,8 @@ module RailsuiCharts
           breakpoint: 640,
           options: {
             chart: { height: mobile_height },
-            legend: { fontSize: "11px", itemMargin: { horizontal: 6, vertical: 2 } },
-            xaxis: carry_over(config[:xaxis], { labels: { style: { fontSize: "11px" } } }),
+            legend: { fontSize: font_size_sm, itemMargin: { horizontal: 6, vertical: 2 } },
+            xaxis: carry_over(config[:xaxis], { labels: { style: { fontSize: font_size_sm } } }),
             yaxis: mobile_yaxis(config[:yaxis]),
             grid: carry_over(config[:grid], { padding: { left: 0, right: 0 } }),
             markers: { hover: { size: 8 } }
@@ -180,7 +180,7 @@ module RailsuiCharts
     end
 
     def mobile_yaxis(current)
-      overrides = { labels: { style: { fontSize: "11px" } } }
+      overrides = { labels: { style: { fontSize: font_size_sm } } }
       # A numeric axis already has bounds picked so its ticks land on round
       # numbers. Forcing a count knocks them back off — 10..70 in four steps
       # reads 10 / 25 / 40 / 55 / 70.
@@ -242,7 +242,7 @@ module RailsuiCharts
           stroke: { curve: "straight", width: 2, colors: [config_color(:primary)] },
           fill: { opacity: 0.12, colors: [config_color(:primary)] },
           plotOptions: { radar: radar_plot_options },
-          xaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: "inherit", fontSize: "12px" } } },
+          xaxis: { labels: { show: true, style: { colors: config_color(:text), fontFamily: font_family, fontSize: font_size } } },
           # The concentric rings already carry magnitude; a numeric axis just
           # overprints the polygon.
           yaxis: { show: false },
@@ -276,7 +276,9 @@ module RailsuiCharts
         colors: [config_color(:primary), config_color(:muted)],
         stroke: {
           curve: curve,
-          width: sparkline? ? [2, 2] : [2, 2],
+          # Both periods take the same weight; the dash is what separates them,
+          # so thinning the comparison would say "less important" twice.
+          width: [geometry(:stroke_width), geometry(:stroke_width)],
           dashArray: [0, 4]
         },
         fill: comparison_fill,
@@ -307,7 +309,7 @@ module RailsuiCharts
         # Segments separate with a gap in the surface colour rather than a
         # stroke drawn around them, so the divider never reads as data.
         stroke: { show: true, width: 2, colors: [surface_color] },
-        plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: "end" } }
+        plotOptions: { bar: { borderRadius: geometry(:bar_radius), borderRadiusApplication: "end" } }
       }
     end
 
@@ -317,8 +319,8 @@ module RailsuiCharts
         position: "top",
         horizontalAlign: "left",
         offsetX: -8,
-        fontFamily: "inherit",
-        fontSize: "12px",
+        fontFamily: font_family,
+        fontSize: font_size,
         labels: { colors: config_color(:text) },
         markers: { width: 8, height: 8, radius: 8, offsetX: -2 },
         itemMargin: { horizontal: 8, vertical: 0 }
@@ -352,7 +354,7 @@ module RailsuiCharts
 
     def bar_plot_options
       {
-        borderRadius: 4,
+        borderRadius: geometry(:bar_radius),
         # Round the data-end only; the baseline stays square so every bar
         # grows from the same edge.
         borderRadiusApplication: "end",
@@ -396,8 +398,8 @@ module RailsuiCharts
         show: true,
         position: "bottom",
         horizontalAlign: "center",
-        fontFamily: "inherit",
-        fontSize: "12px",
+        fontFamily: font_family,
+        fontSize: font_size,
         # Reserve the band rather than letting Apex estimate it. Its own
         # estimate runs a few pixels short, and since the canvas clips, the
         # bottom row of labels loses its descenders — or the whole row, once a
@@ -452,7 +454,7 @@ module RailsuiCharts
         categories: categories,
         labels: {
           show: categories.any? && !sparkline?,
-          style: { colors: config_color(:text), fontFamily: "inherit", fontSize: "12px" },
+          style: { colors: config_color(:text), fontFamily: font_family, fontSize: font_size },
           # Rotated labels are the loudest tell of an unstyled chart. Labels
           # either fit horizontally or the tick count comes down.
           rotate: 0,
@@ -475,7 +477,7 @@ module RailsuiCharts
       base = {
         labels: {
           show: true,
-          style: { colors: config_color(:text), fontFamily: "inherit", fontSize: "12px" }
+          style: { colors: config_color(:text), fontFamily: font_family, fontSize: font_size }
         },
         axisBorder: { show: false },
         axisTicks: { show: false }
@@ -568,7 +570,7 @@ module RailsuiCharts
         opposite: @options[:axis] == :right,
         labels: {
           show: !sparkline?,
-          style: { colors: config_color(:text), fontFamily: "inherit", fontSize: "12px" }
+          style: { colors: config_color(:text), fontFamily: font_family, fontSize: font_size }
         },
         tickAmount: 5,
         axisBorder: { show: false },
@@ -597,10 +599,10 @@ module RailsuiCharts
       return { size: 0 } if sparkline?
 
       {
-        size: 0,
-        strokeWidth: 2,
+        size: geometry(:marker_size),
+        strokeWidth: geometry(:stroke_width),
         strokeColors: surface_color,
-        hover: { size: 6, sizeOffset: 0 }
+        hover: { size: geometry(:marker_hover_size), sizeOffset: 0 }
       }
     end
 
@@ -612,7 +614,7 @@ module RailsuiCharts
         followCursor: false,
         x: { show: !circular? && categories.any? },
         marker: { show: true },
-        style: { fontFamily: "inherit", fontSize: "12px" }
+        style: { fontFamily: font_family, fontSize: font_size }
       }
     end
 
@@ -643,13 +645,13 @@ module RailsuiCharts
     def stroke_options
       case @type
       when :sparkline
-        { curve: curve, width: 2, lineCap: "round" }
+        { curve: curve, width: geometry(:stroke_width), lineCap: "round" }
       when :bar, :column
         { show: true, width: 0, colors: ["transparent"] }
       when :bubble
         { show: false }
       else
-        { curve: curve, width: 2, lineCap: "round" }
+        { curve: curve, width: geometry(:stroke_width), lineCap: "round" }
       end
     end
 
@@ -716,6 +718,25 @@ module RailsuiCharts
 
     def config_color(key)
       RailsuiCharts.config.colors[key]
+    end
+
+    # Type ships as a `var()` string and is resolved in the browser, the same
+    # way the colours are. Geometry cannot: Apex does arithmetic on a radius or
+    # a stroke width, and a resolved variable would arrive as a string.
+    def font_family
+      RailsuiCharts.config.typography[:family]
+    end
+
+    def font_size
+      RailsuiCharts.config.typography[:size]
+    end
+
+    def font_size_sm
+      RailsuiCharts.config.typography[:size_sm]
+    end
+
+    def geometry(key)
+      RailsuiCharts.config.geometry[key]
     end
 
     def surface_color
