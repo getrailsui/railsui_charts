@@ -345,4 +345,52 @@ class ApexOptionsBuilderTest < Minitest::Test
   ensure
     RailsuiCharts.config.extra_types.delete(:sankey)
   end
+
+  def test_a_bare_array_of_values_still_gets_an_axis
+    # Apex sizes the x-axis from the category list and, given an empty one,
+    # renders nothing at all — no canvas and no error. A bare array is a
+    # documented input, so it cannot be allowed to produce a blank element.
+    config = RailsuiCharts::ApexOptionsBuilder.new([18, 22, 19], type: :line).build
+
+    assert_equal [1, 2, 3], config.dig(:xaxis, :categories)
+    assert_equal [18, 22, 19], config[:series].first[:data]
+  end
+
+  def test_positions_do_not_get_drawn_as_labels
+    # They exist so Apex has something to measure, not to be read.
+    config = RailsuiCharts::ApexOptionsBuilder.new([18, 22, 19], type: :line).build
+
+    refute config.dig(:xaxis, :labels, :show)
+  end
+
+  def test_labelled_data_keeps_its_labels
+    config = RailsuiCharts::ApexOptionsBuilder.new({ "Mon" => 1, "Tue" => 2 }, type: :line).build
+
+    assert_equal %w[Mon Tue], config.dig(:xaxis, :categories)
+    assert config.dig(:xaxis, :labels, :show)
+  end
+
+  def test_a_bare_array_still_names_its_own_slices_on_a_donut
+    # Circular types label themselves. Handing them positions would turn
+    # "Item 1" into "1".
+    config = RailsuiCharts::ApexOptionsBuilder.new([18, 22, 19], type: :donut).build
+
+    assert_equal ["Item 1", "Item 2", "Item 3"], config[:labels]
+  end
+
+  def test_a_sparkline_ships_no_responsive_block
+    # The Stimulus controller keys off this. It used to write `responsive`
+    # back as undefined when a chart had none, and Apex treats a present-but-
+    # undefined key as a list to walk — every sparkline threw before drawing
+    # and left an empty element with nothing in the console.
+    config = RailsuiCharts::ApexOptionsBuilder.new([1, 2, 3], type: :sparkline).build
+
+    refute config.key?(:responsive)
+  end
+
+  def test_a_normal_chart_still_gets_its_breakpoints
+    config = RailsuiCharts::ApexOptionsBuilder.new({ "Mon" => 1 }, type: :line).build
+
+    assert_kind_of Array, config[:responsive]
+  end
 end

@@ -111,6 +111,19 @@ module RailsuiCharts
       @data.map { |d| d[:x] }.compact
     end
 
+    # A bare array of values carries no labels, and Apex sizes the x-axis from
+    # this list: given an empty one it draws nothing at all — no canvas, no
+    # error, just an element that stays empty. Positions stand in, which is
+    # what the accessibility table already does for exactly this data.
+    #
+    # Only the axis needs this. Circular types name their own slices, and
+    # handing them numbers would replace "Item 1" with "1".
+    def axis_categories
+      return categories if categories.any? || @data.empty?
+
+      @data.each_index.map { |index| index + 1 }
+    end
+
     def series_values
       @data.map { |d| d[:y] }
     end
@@ -451,7 +464,7 @@ module RailsuiCharts
       return numeric_axis(:x) if numeric_xaxis?
 
       {
-        categories: categories,
+        categories: axis_categories,
         labels: {
           show: categories.any? && !sparkline?,
           style: { colors: config_color(:text), fontFamily: font_family, fontSize: font_size },
