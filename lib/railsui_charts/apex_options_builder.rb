@@ -2,7 +2,7 @@
 
 module RailsuiCharts
   class ApexOptionsBuilder
-    SUPPORTED_TYPES = %i[line area bar column sparkline pie donut scatter bubble radar polar_area].freeze
+    SUPPORTED_TYPES = %i[line area bar column sparkline pie donut scatter bubble radar polar_area range_bar].freeze
 
     # Bars never fill their band. The leftover space is what keeps a chart quiet,
     # so thickness scales down as the category count drops.
@@ -34,7 +34,14 @@ module RailsuiCharts
 
     def self.value_of(point)
       case point
-      when Hash then point[:y] || point["y"]
+      when Hash
+        point = point.symbolize_keys if point.respond_to?(:symbolize_keys)
+        # A span carries its value in its edges rather than in a `y`. Without
+        # this a timeline looks empty to `blank?` and renders the empty state
+        # instead of itself — data present, chart gone, nothing raised.
+        return point[:from] || point[:to] if point.key?(:from) || point.key?(:to)
+
+        point[:y]
       when Array then point[1]
       else point
       end
@@ -129,13 +136,23 @@ module RailsuiCharts
       data.map do |point|
         case point
         when Hash
-          { x: point[:x] || point["x"], y: point[:y] || point["y"], z: point[:z] || point["z"] }
+          point = point.symbolize_keys if point.respond_to?(:symbolize_keys)
+          { x: point[:x], y: span_or_value(point), z: point[:z] }
         when Array
           { x: point[0], y: point[1], z: point[2] }
         else
           { x: nil, y: point, z: nil }
         end
       end
+    end
+
+    # A range takes two values rather than one. `from:` and `to:` read better
+    # than a bare two-element array at the call site, which is what a timeline
+    # is written with, so both arrive here as the pair Apex wants.
+    def span_or_value(point)
+      return [point[:from], point[:to]] if point.key?(:from) || point.key?(:to)
+
+      point[:y]
     end
 
     def categories
@@ -150,6 +167,11 @@ module RailsuiCharts
     # Only the axis needs this. Circular types name their own slices, and
     # handing them numbers would replace "Item 1" with "1".
     def axis_categories
+      # A lane per label, not per span. Two spans on one row is the whole point
+      # of a timeline, and Apex draws both of them in the first matching lane
+      # either way — but left to derive the list itself it also reserves a
+      # second, empty lane underneath and labels it the same.
+      return categories.uniq if timeline?
       return categories if categories.any? || @data.empty?
 
       @data.each_index.map { |index| index + 1 }
@@ -255,6 +277,18 @@ module RailsuiCharts
         { plotOptions: { bar: bar_plot_options.merge(horizontal: true, barHeight: bar_thickness) } }
       when :column
         { plotOptions: { bar: bar_plot_options.merge(horizontal: false, columnWidth: bar_thickness) } }
+      when :range_bar
+        {
+          # Horizontal because a timeline reads left to right, and because the
+          # row labels are names rather than a scale — vertical would rotate
+          # them.
+          plotOptions: { bar: { horizontal: true, borderRadius: geometry(:bar_radius), barHeight: bar_thickness } },
+          xaxis: { type: "datetime" },
+          # The bar already spans its own dates. A gridline behind every row
+          # would be drawing the categories twice.
+          grid: { yaxis: { lines: { show: false } }, xaxis: { lines: { show: true } } },
+          tooltip: { x: { format: "d MMM yyyy" } }
+        }
       when :pie, :donut
         {
           labels: circular_labels,
@@ -480,6 +514,10 @@ module RailsuiCharts
       case @type
       when :scatter then points.map { |point| [point[:x], point[:y]] }
       when :bubble then points.map { |point| { x: point[:x], y: point[:y], z: point[:z] || 1 } }
+      when :range_bar
+        # Both ends stay in the point. A range read off an axis is only half a
+        # range, and the label names the row rather than a position on a scale.
+        points.map { |point| { x: point[:x], y: Array(point[:y]).map { |edge| range_edge(edge) } } }
       else
         # A registered type may draw its own labels rather than read them off an
         # axis, in which case flattening the point to a value loses them.
@@ -491,6 +529,20 @@ module RailsuiCharts
 
     def labelled_points?
       RailsuiCharts.config.labelled_point_types.include?(@type)
+    end
+
+    # Apex plots a range against a time axis in milliseconds. Handing it a Time
+    # gives "Invalid Date" rather than an error, so the conversion happens here
+    # where the type is known and a plain number is still allowed through for
+    # a range that is not about time at all.
+    def range_edge(value)
+      return value.to_time.to_i * 1000 if value.respond_to?(:to_time)
+
+      value
+    end
+
+    def timeline?
+      @type == :range_bar
     end
 
     def series_label
@@ -881,6 +933,7 @@ module RailsuiCharts
     def apex_type_for(type)
       case type&.to_sym
       when :sparkline then "line"
+      when :range_bar then "rangeBar"
       when :column, :bar then "bar"
       when :donut then "donut"
       when :polar_area then "polarArea"

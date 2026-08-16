@@ -56,6 +56,28 @@ describe("applyFormatters", () => {
 
     assert.equal(typeof result.xaxis.labels.formatter, "function")
   })
+
+  test("leaves a time axis to format itself", () => {
+    // A timeline's x values are milliseconds. A number formatter over the top
+    // turns every tick into "1,786,380,000,000" where a date belongs.
+    const result = controller().applyFormatters({
+      format: "number",
+      plotOptions: { bar: { horizontal: true } },
+      xaxis: { type: "datetime" }
+    })
+
+    assert.equal(result.xaxis.labels, undefined)
+  })
+
+  test("still formats a horizontal bar that is not about time", () => {
+    const result = controller().applyFormatters({
+      format: "currency",
+      plotOptions: { bar: { horizontal: true } },
+      xaxis: {}
+    })
+
+    assert.equal(typeof result.xaxis.labels.formatter, "function")
+  })
 })
 
 describe("formatterFor", () => {
