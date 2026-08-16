@@ -116,6 +116,9 @@ export default class extends Controller {
     if (options.tooltip?.custom || options.chart?.sparkline?.enabled) return options
 
     const format = this.formatterFor(options.format || "number", options.currency)
+    // One formatter per series on a combo, so a currency row and a percentage
+    // row in the same tooltip each read in their own units.
+    const rowFormats = (options.series_formats || []).map((name) => this.formatterFor(name, options.currency))
     const comparedDates = options.compare_categories || []
     const upIsGood = options.trend_up_is_good !== false
     const showDelta = options.tooltip_delta !== false
@@ -137,7 +140,8 @@ export default class extends Controller {
               ? (index === 0 ? labels?.[dataPointIndex] : comparedDates[dataPointIndex])
               : w.globals.seriesNames[index],
             value: point(index),
-            color: w.globals.colors[index]
+            color: w.globals.colors[index],
+            format: rowFormats[index] || null
           }))
 
           // Auto: a comparison leads with the metric, since the rows carry the
@@ -175,7 +179,7 @@ export default class extends Controller {
               <span class="railsui-chart-tooltip__key" style="background:${this.escape(row.color)}"></span>
               ${this.escape(row.label)}
             </th>
-            <td>${this.escape(format ? format(row.value) : row.value)}</td>
+            <td>${this.escape(this.formatRow(row, format))}</td>
           </tr>`
       )
       .join("")
@@ -191,6 +195,12 @@ export default class extends Controller {
         </div>
         <table class="railsui-chart-tooltip__rows">${cells}</table>
       </div>`
+  }
+
+  // A row's own formatter when it has one, the chart's otherwise.
+  formatRow(row, fallback) {
+    const format = row.format || fallback
+    return format ? format(row.value) : row.value
   }
 
   // Series names and category labels come from application data.
@@ -238,7 +248,13 @@ export default class extends Controller {
 
     const withFormatter = (axis) => {
       if (Array.isArray(axis)) return axis.map(withFormatter)
-      return { ...(axis || {}), labels: { ...(axis?.labels || {}), formatter: formatter } }
+
+      // An axis may name its own format. A combo measures money on one side
+      // and a percentage on the other, and one formatter across both dresses
+      // one of the two scales in the wrong units.
+      const own = axis?.format ? this.formatterFor(axis.format, options.currency) : null
+
+      return { ...(axis || {}), labels: { ...(axis?.labels || {}), formatter: own || formatter } }
     }
 
     // A horizontal bar puts its values along x and its categories up y, so

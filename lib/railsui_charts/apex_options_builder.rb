@@ -12,6 +12,10 @@ module RailsuiCharts
     # Series that support an overlaid previous-period comparison.
     COMPARABLE_TYPES = %i[line area column sparkline].freeze
 
+    # Both sides of a dual axis are cut into this many intervals, so one grid
+    # serves both scales.
+    AXIS_INTERVALS = 4
+
     # Two rows' worth. Circular charts cap at four categories, which is the most
     # that can wrap onto a second line in a narrow card.
     CIRCULAR_LEGEND_HEIGHT = 52
@@ -80,12 +84,39 @@ module RailsuiCharts
       return [{ name: nil, data: normalize_data(data) }] unless self.class.series_form?(data)
 
       data.map do |entry|
-        { name: entry[:name] || entry["name"], data: normalize_data(entry[:data] || entry["data"]) }
+        entry = entry.symbolize_keys if entry.respond_to?(:symbolize_keys)
+
+        {
+          name: entry[:name],
+          data: normalize_data(entry[:data]),
+          # A series may carry its own shape, scale, and formatting. Together
+          # these are what makes a combo: revenue as columns against money on
+          # the left, a churn rate as a line against percent on the right.
+          type: entry[:type]&.to_sym,
+          axis: entry[:axis]&.to_sym,
+          format: entry[:format]&.to_sym
+        }
       end
     end
 
     def multi?
       @series.length > 1
+    end
+
+    # One chart drawing more than one shape. Any series naming its own type
+    # makes it so — there is no separate `type: :combo` to remember, because
+    # the series already say what they are.
+    def combo?
+      @series.any? { |series| series[:type].present? }
+    end
+
+    def dual_axis?
+      @series.any? { |series| series[:axis] == :right }
+    end
+
+    def series_type(series, index)
+      type = series[:type] || (index.zero? ? @type : @series.first[:type]) || @type
+      apex_type_for(type)
     end
 
     def all_points
@@ -309,7 +340,14 @@ module RailsuiCharts
     def multi_series_options
       return {} unless multi?
 
-      { legend: series_legend, tooltip: { shared: true, intersect: false } }
+      options = { legend: series_legend, tooltip: { shared: true, intersect: false } }
+      return options unless combo?
+
+      # Read by the Stimulus controller, not by Apex. A combo puts money on one
+      # row of the tooltip and a percentage on the next, and a single formatter
+      # across both dresses one of them wrongly.
+      options[:series_formats] = @series.map { |series| series[:format] || @options[:format] || :number }
+      options
     end
 
     # Stacking answers "what is this made of over time", which a grouped chart
@@ -428,7 +466,11 @@ module RailsuiCharts
       return series_values if circular?
 
       plotted = @series.each_with_index.map do |series, index|
-        { name: series[:name] || (index.zero? ? series_label : "Series #{index + 1}"), data: points_for(series[:data]) }
+        entry = { name: series[:name] || (index.zero? ? series_label : "Series #{index + 1}"), data: points_for(series[:data]) }
+        # Only on a combo. Naming a type on every series of an ordinary chart
+        # would override the chart-level one and quietly ignore `type:`.
+        entry[:type] = series_type(series, index) if combo?
+        entry
       end
 
       comparing? ? plotted + [{ name: compare_label, data: @compare.map { |point| point[:y] } }] : plotted
@@ -556,7 +598,7 @@ module RailsuiCharts
     def nice_step(raw)
       return 1 if raw <= 0
 
-      magnitude = 10**Math.log10(raw).floor
+      magnitude = 10.0**Math.log10(raw).floor
       [1, 2, 2.5, 5].each { |multiple| return multiple * magnitude if raw <= multiple * magnitude }
       10 * magnitude
     end
@@ -576,6 +618,7 @@ module RailsuiCharts
 
     def yaxis_options
       return { labels: { show: false } } if circular?
+      return dual_yaxis_options if dual_axis?
 
       {
         # Stripe-style dashboards hang the scale on the right so the plot starts
@@ -589,6 +632,125 @@ module RailsuiCharts
         axisBorder: { show: false },
         axisTicks: { show: false }
       }
+    end
+
+    # Apex matches a yaxis array to the series by position, so there is one
+    # entry per series whether or not it draws a scale.
+    #
+    # Only the first series on each side draws one. Two series sharing the left
+    # scale would otherwise stack two identical rulers on top of each other,
+    # which reads as a rendering fault rather than as two series.
+    def dual_yaxis_options
+      drawn = { left: false, right: false }
+      scales = aligned_scales
+
+      @series.each_with_index.map do |series, index|
+        side = series[:axis] == :right ? :right : :left
+        show = !drawn[side]
+        drawn[side] = true
+
+        {
+          seriesName: series[:name] || (index.zero? ? series_label : "Series #{index + 1}"),
+          opposite: side == :right,
+          show: show,
+          **scales.fetch(side, {}),
+          # The reader has to know which scale belongs to which series, and on
+          # a two-axis chart position alone does not say. The labels take the
+          # colour of the series they measure.
+          labels: {
+            show: show,
+            style: { colors: axis_ink(index), fontFamily: font_family, fontSize: font_size }
+          },
+          format: series[:format] || @options[:format],
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        }.compact
+      end
+    end
+
+    # Two scales, so the axis is coloured like its series. One scale keeps the
+    # quiet neutral: there is nothing to tell apart.
+    def axis_ink(index)
+      resolve_var(categorical_palette[index] || config_color(:text))
+    end
+
+    # Both sides fitted to their own values, then cut into the same number of
+    # intervals — that shared count is what makes one set of gridlines serve
+    # both scales.
+    #
+    # Apex's own forceNiceScale fits each axis independently and rounds hard:
+    # revenue topping out at 52K came back as a 0–100K scale with the columns
+    # filling half the plot while the line sat against a well-fitted one.
+    def aligned_scales
+      sides = %i[left right].to_h { |side| [side, fit_axis(axis_values(side))] }
+      return {} unless sides.values.all?
+
+      sides
+    end
+
+    # A scale fitted to its values in exactly AXIS_INTERVALS steps.
+    #
+    # The interval count is fixed rather than derived, because that is the
+    # whole alignment mechanism: two axes cut into the same number of pieces
+    # put their gridlines on each other whatever their ranges are.
+    #
+    # The step ladder is finer than the one a single axis uses. With a fixed
+    # count, a coarse ladder is what produces the too-tall scale: revenue
+    # topping out at 52K wants a step near 13K, and rounding that to 20K makes
+    # a 0–100K axis with the columns filling half the plot.
+    def fit_axis(values)
+      values = values.compact.map(&:to_f)
+      return nil if values.empty?
+
+      min, max = values.minmax
+      return nil if min == max
+
+      step = dual_step((max - min) / AXIS_INTERVALS.to_f)
+      # The floor moves down to a multiple of the step, which can leave the top
+      # short. Widening the step is what recovers it.
+      step = dual_step(step * 1.0001) while (min / step).floor * step + step * AXIS_INTERVALS < max
+
+      low = (min / step).floor * step
+      { min: trim_float(low), max: trim_float(low + step * AXIS_INTERVALS), tickAmount: AXIS_INTERVALS,
+        decimalsInFloat: step == step.to_i ? 0 : 1 }
+    end
+
+    # 1.5 and 3 are on this ladder and not on nice_step's. They are the steps
+    # that keep a fixed-count scale close to its data instead of doubling past
+    # it.
+    DUAL_STEPS = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5].freeze
+
+    # 10.0 and not 10: an Integer raised to a negative Integer gives a Rational
+    # in Ruby, and a Rational survives every calculation below to arrive in the
+    # browser as the string "5/2". Apex cannot read that, drops the bound, and
+    # quietly auto-scales — which clipped the top of the data rather than
+    # raising anything.
+    def dual_step(raw)
+      return 1 if raw <= 0
+
+      magnitude = 10.0**Math.log10(raw).floor
+      DUAL_STEPS.each { |multiple| return multiple * magnitude if raw <= multiple * magnitude }
+      10 * magnitude
+    end
+
+    def axis_values(side)
+      values = @series.select { |series| axis_side(series) == side }
+                      .flat_map { |series| series[:data].map { |point| point[:y] } }
+      # A column grows from a baseline, so its scale has to contain one. A line
+      # can float, and forcing zero on a churn rate hovering near 3% would
+      # flatten it against the top of the plot.
+      values << 0 if values.any? && baseline?(side)
+      values
+    end
+
+    def axis_side(series)
+      series[:axis] == :right ? :right : :left
+    end
+
+    def baseline?(side)
+      @series.any? do |series|
+        axis_side(series) == side && %w[bar column].include?((series[:type] || @type).to_s)
+      end
     end
 
     def grid_options
@@ -708,12 +870,21 @@ module RailsuiCharts
     end
 
     def apex_chart_type
-      case @type
+      # A mixed chart takes its shape from each series, and Apex wants the
+      # chart-level type to be "line" while they do — set to "bar" it draws
+      # every series as bars whatever they asked for.
+      return "line" if combo?
+
+      apex_type_for(@type)
+    end
+
+    def apex_type_for(type)
+      case type&.to_sym
       when :sparkline then "line"
       when :column, :bar then "bar"
       when :donut then "donut"
       when :polar_area then "polarArea"
-      else @type.to_s
+      else type.to_s
       end
     end
 
