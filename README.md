@@ -157,6 +157,36 @@ Pass an array of `{ name:, data: }` instead of a bare series. The `data` key is 
 
 Each series takes the next palette slot in order, and two or more always carry a legend — colour is never the only thing telling them apart.
 
+### Combo and dual axis
+
+Give a series its own `type:` and the chart draws more than one shape. Give it `axis: :right` and it gets its own scale.
+
+```erb
+<%= railsui_chart [
+      { name: "Revenue",    data: @revenue, type: :column, format: :short_currency },
+      { name: "Churn rate", data: @churn,   type: :line, axis: :right, format: :percentage }
+    ] %>
+```
+
+There is no `type: :combo` to remember — a series naming a type is what makes the chart mixed.
+
+`format:` on a series dresses its own axis and its own row in the tooltip, so money and percentages read in their own units. Both scales are cut into the same number of intervals so their gridlines land on each other, and each is fitted to its own values. A side carrying columns reaches zero; a side carrying only lines does not, since forcing zero onto a rate hovering near 3% flattens it against the top of the plot.
+
+Axis labels take the colour of the series they measure. With two scales, position alone does not say which belongs to which.
+
+### Timelines and ranges
+
+`:range_bar` plots spans rather than points. Pass `from:` and `to:` with whatever `Time` or `Date` you already have — Apex wants milliseconds, and handing it a `Time` gives "Invalid Date" rather than an error.
+
+```erb
+<%= railsui_chart [
+      { x: "web", from: deploy.started_at, to: deploy.finished_at },
+      { x: "api", from: incident.began_at, to: incident.resolved_at }
+    ], type: :range_bar %>
+```
+
+Rows sharing a label stack onto one lane. A bare two-element `y` works too, for a range that is not about time.
+
 ### Stacking
 
 ```erb
@@ -298,6 +328,7 @@ Presets: last 24 hours, 7 days, 30 days, 90 days, 12 months, and month to date.
 | `:radar` | Radar / spider chart |
 | `:polar_area` | Polar area chart |
 | `:sparkline` | Tiny line chart for metric cards |
+| `:range_bar` | Spans on an axis: timelines, Gantt, durations |
 
 ## Data formats
 
@@ -344,6 +375,29 @@ Colors are controlled by CSS variables. Override them in your Tailwind CSS or cu
   --rui-chart-positive: #047857;
   --rui-chart-negative: #b91c1c;
 }
+```
+
+Type is themed the same way. These reach ApexCharts as CSS strings, so the controller resolves them against the chart's own element — which means setting one on a card scopes it to that card's charts:
+
+```css
+:root {
+  --rui-chart-font-family: inherit;
+  --rui-chart-font-size: 12px;      /* axis and data labels */
+  --rui-chart-font-size-sm: 11px;   /* legend, and under 640px */
+  --rui-chart-text-size: 0.8125rem; /* tooltip rows, metric labels, tables */
+  --rui-chart-value-size: 1.375rem; /* the metric card headline */
+}
+```
+
+Geometry cannot ride that channel. ApexCharts does arithmetic on a border radius and a stroke width, and a resolved CSS variable arrives as a string — `"4" + 1` is `"41"`. Those live in an initializer:
+
+```ruby
+RailsuiCharts.configure do |config|
+  config.geometry[:bar_radius] = 4
+  config.geometry[:stroke_width] = 2
+  config.geometry[:marker_size] = 0
+  config.geometry[:marker_hover_size] = 6
+end
 ```
 
 Dark mode is detected via `prefers-color-scheme`, a `dark` class, or a `data-theme="dark"` attribute on the document element, and charts re-render when it changes.
