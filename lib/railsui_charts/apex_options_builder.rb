@@ -16,6 +16,18 @@ module RailsuiCharts
     # serves both scales.
     AXIS_INTERVALS = 4
 
+    # Apex reserves a gutter between the axis labels and the edge of its canvas.
+    # On its own that is invisible; inside a card it is not, because the card's
+    # heading starts at the content edge and the axis labels start this far
+    # inside it. Cancelling it lines the chart up with the text above it.
+    AXIS_LABEL_GUTTER = 16
+
+    # A category axis reserves almost nothing, because Apex sizes that column to
+    # the text itself — the only thing outside it is the grid's own left
+    # padding. Cancelling the full gutter here pushed the longest name twelve
+    # pixels past the edge of the card.
+    CATEGORY_AXIS_GUTTER = 4
+
     # Two rows' worth. Circular charts cap at four categories, which is the most
     # that can wrap onto a second line in a narrow card.
     CIRCULAR_LEGEND_HEIGHT = 52
@@ -678,6 +690,7 @@ module RailsuiCharts
         opposite: @options[:axis] == :right,
         labels: {
           show: !sparkline?,
+          offsetX: axis_label_offset(@options[:axis] == :right),
           style: { colors: config_color(:text), fontFamily: font_family, fontSize: font_size }
         },
         tickAmount: 5,
@@ -711,6 +724,7 @@ module RailsuiCharts
           # colour of the series they measure.
           labels: {
             show: show,
+            offsetX: axis_label_offset(side == :right),
             style: { colors: axis_ink(index), fontFamily: font_family, fontSize: font_size }
           },
           format: series[:format] || @options[:format],
@@ -718,6 +732,23 @@ module RailsuiCharts
           axisTicks: { show: false }
         }.compact
       end
+    end
+
+    # Negative on both sides: Apex mirrors offsetX for an opposite axis, so the
+    # same sign pulls each toward its own edge rather than one of them inward.
+    # The right reserves two pixels less than the left, which is the axis border
+    # allowance it draws on one side only.
+    #
+    # A y-axis carrying category names rather than values — a horizontal bar or
+    # a timeline — reserves a different amount, so it gets its own figure.
+    def axis_label_offset(opposite)
+      return -CATEGORY_AXIS_GUTTER if category_yaxis?
+
+      opposite ? -(AXIS_LABEL_GUTTER - 2) : -AXIS_LABEL_GUTTER
+    end
+
+    def category_yaxis?
+      timeline? || @type == :bar
     end
 
     # Two scales, so the axis is coloured like its series. One scale keeps the
