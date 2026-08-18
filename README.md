@@ -15,8 +15,6 @@ Production-ready chart components for Rails. Built on [ApexCharts](https://apexc
 <%= railsui_chart [{ x: "A", y: 30 }, { x: "B", y: 50 }], type: :pie %>
 ```
 
-Or clone the [railsui.com site](https://github.com/justalever/railsui_app) and visit `/charts` for the full showcase.
-
 ## Why Rails UI Charts?
 
 AI can generate a first-draft chart in seconds. The hard part is the last 20%: accessibility, responsive behavior, dark mode, Turbo lifecycle support, loading and empty states, and a stable API that does not break when you upgrade.
