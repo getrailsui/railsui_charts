@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Cut a release: write the version, commit, tag, build, push to RubyGems.
+#
+#   bin/release 0.1.0
+#
+# Borrowed from the railsui gem. The guards are the difference: a pushed
+# version number can never be pushed again, so everything that can be checked
+# before the push happens before the push.
+set -euo pipefail
+
+VERSION=${1:-}
+
+if [ -z "$VERSION" ]; then
+  echo "Usage: bin/release 0.1.0" >&2
+  exit 1
+fi
+
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.]+)?$ ]]; then
+  echo "Version should look like 0.1.0 — got '$VERSION'" >&2
+  exit 1
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Working tree is not clean. Commit or stash first." >&2
+  exit 1
+fi
+
+if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+  echo "Tag v$VERSION already exists." >&2
+  exit 1
+fi
+
+echo "==> Tests"
+bundle exec rake test
+
+echo "==> Version $VERSION"
+printf '# frozen_string_literal: true\n\nmodule RailsuiCharts\n  VERSION = "%s"\nend\n' "$VERSION" > ./lib/railsui_charts/version.rb
+bundle
+
+git add Gemfile.lock lib/railsui_charts/version.rb CHANGELOG.md
+git commit -m "Bump version for $VERSION"
+git push
+git tag "v$VERSION"
+git push --tags
+
+echo "==> Build and push"
+gem build railsui_charts.gemspec
+trap 'rm -f "railsui_charts-$VERSION.gem"' EXIT
+gem push "railsui_charts-$VERSION.gem" --host https://rubygems.org
+
+echo "==> Published railsui_charts $VERSION"

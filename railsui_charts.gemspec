@@ -12,10 +12,15 @@ Gem::Specification.new do |spec|
   spec.metadata = {
     "homepage_uri" => "https://railsui.com/charts",
     "documentation_uri" => "https://railsui.com/docs/charts",
-    "source_code_uri" => "https://github.com/getrailsui/railsui_charts"
+    "source_code_uri" => "https://github.com/getrailsui/railsui_charts",
+    "changelog_uri" => "https://github.com/getrailsui/railsui_charts/blob/main/CHANGELOG.md",
+    "bug_tracker_uri" => "https://github.com/getrailsui/railsui_charts/issues",
+    # Refuses a push from an account without multi-factor auth, which is the
+    # attack this gem would otherwise be a route for: it is a dependency.
+    "rubygems_mfa_required" => "true"
   }
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir["{app,config,lib}/**/*", "README.md", "LICENSE.md", "Rakefile"].reject do |f|
+    Dir["{app,config,lib}/**/*", "README.md", "LICENSE.md", "CHANGELOG.md", "Rakefile"].reject do |f|
       File.directory?(f) || f.match(%r{\A(?:test|spec|features)/})
     end
   end
