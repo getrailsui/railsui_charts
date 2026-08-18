@@ -6,6 +6,16 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.1.2]
+
+### Fixed
+
+- Tooltips on pie, donut and polar area charts rendered as an empty box. A
+  circular chart hands the tooltip a flat array of numbers and names the
+  hovered slice with `seriesIndex`; reading it as one array per series gave
+  every value `undefined`, and rows without a value are dropped. The slice now
+  shows its name and its formatted value.
+
 ## [0.1.1]
 
 ### Fixed
@@ -57,6 +67,7 @@ First release.
   reachable only by hovering a mark
 - Animation stops when the reader has asked for reduced motion
 
-[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/getrailsui/railsui_charts/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/getrailsui/railsui_charts/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/getrailsui/railsui_charts/releases/tag/v0.1.0

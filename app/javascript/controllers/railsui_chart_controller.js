@@ -128,8 +128,23 @@ export default class extends Controller {
       ...options,
       tooltip: {
         ...(options.tooltip || {}),
-        custom: ({ series, dataPointIndex, w }) => {
+        custom: ({ series, seriesIndex, dataPointIndex, w }) => {
           const labels = w.globals.categoryLabels?.length ? w.globals.categoryLabels : w.globals.labels
+
+          // A pie, donut or polar area hands back one number per slice rather
+          // than one array per series, and names the hovered slice with
+          // seriesIndex — dataPointIndex means nothing there. Read as a
+          // cartesian series, every value came out undefined, and since rows
+          // without a value are dropped the tooltip rendered as an empty box.
+          if (!Array.isArray(series[0])) {
+            const slice = seriesIndex ?? dataPointIndex
+            // No row label: the slice's name is already the heading, and
+            // printing it twice in a two-line tooltip reads as a mistake.
+            const row = { label: "", value: series[slice], color: w.globals.colors[slice], format: rowFormats[slice] || null }
+
+            return this.tooltipMarkup(labels?.[slice], [row], null, format)
+          }
+
           const point = (index) => series[index]?.[dataPointIndex]
           const comparing = series.length === 2 && comparedDates.length > 0
 

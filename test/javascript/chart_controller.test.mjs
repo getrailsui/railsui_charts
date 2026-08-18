@@ -166,3 +166,54 @@ describe("resolveCssVariable", () => {
     assert.equal(withComputed("").resolveCssVariable("#0ea5e9"), "#0ea5e9")
   })
 })
+
+describe("applyTooltip on circular charts", () => {
+  // A pie, donut or polar area hands the custom tooltip a flat array of
+  // numbers and names the hovered slice with seriesIndex. Indexing it the
+  // cartesian way produced undefined for every value; rows without a value
+  // are dropped, so the tooltip rendered as an empty box with no heading.
+  const pie = (overrides = {}) => ({
+    series: [8200, 14800, 9000],
+    seriesIndex: 2,
+    dataPointIndex: -1,
+    w: { globals: { labels: ["Starter", "Pro", "Enterprise"], colors: ["#6366f1", "#ea580c", "#db2777"], seriesNames: [] } },
+    ...overrides
+  })
+
+  const render = (options, payload) => controller().applyTooltip(options).tooltip.custom(payload)
+
+  test("the hovered slice carries its name and its value", () => {
+    const html = render({ format: "short_currency" }, pie())
+
+    assert.match(html, /Enterprise/)
+    assert.match(html, /\$9K/)
+  })
+
+  test("the value is not dropped as undefined", () => {
+    const html = render({ format: "number" }, pie())
+
+    assert.match(html, /<tr>/, "expected a row rather than an empty table")
+    assert.doesNotMatch(html, /undefined/)
+  })
+
+  test("the slice's own colour keys the row", () => {
+    const html = render({ format: "number" }, pie({ seriesIndex: 1 }))
+
+    assert.match(html, /#ea580c/)
+    assert.match(html, /Pro/)
+  })
+
+  test("a cartesian chart still reads one array per series", () => {
+    const html = render({ format: "number" }, {
+      series: [[1, 2], [3, 4]],
+      seriesIndex: 0,
+      dataPointIndex: 1,
+      w: { globals: { labels: ["Jan", "Feb"], colors: ["#111", "#222"], seriesNames: ["A", "B"] } }
+    })
+
+    assert.match(html, /Feb/)
+    assert.match(html, /A/)
+    assert.match(html, /B/)
+  })
+})
+
