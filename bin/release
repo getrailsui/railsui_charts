@@ -38,7 +38,16 @@ printf '# frozen_string_literal: true\n\nmodule RailsuiCharts\n  VERSION = "%s"\
 bundle
 
 git add Gemfile.lock lib/railsui_charts/version.rb CHANGELOG.md
-git commit -m "Bump version for $VERSION"
+
+# The first release has nothing to bump — the version file already says it.
+# `git commit` exits non-zero on an empty commit, which under `set -e` killed
+# the run before the tag. Same on a re-run after a failed push.
+if git diff --cached --quiet; then
+  echo "    version file already at $VERSION, nothing to commit"
+else
+  git commit -m "Bump version for $VERSION"
+fi
+
 git push
 git tag "v$VERSION"
 git push --tags
