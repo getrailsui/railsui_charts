@@ -6,6 +6,30 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.1.3]
+
+### Added
+
+- `rails g railsui_charts:update` re-copies the Stimulus controllers after a
+  gem upgrade. The JavaScript does not run from the gem: the installer copies
+  each controller into the host app and the app's bundler compiles that copy,
+  so `bundle update` moves the Ruby and silently leaves the JavaScript on
+  whatever version was installed. The 0.1.2 tooltip fix reached nobody who only
+  ran `bundle update`.
+- Copied controllers carry the gem version they came from in a header comment,
+  and a note saying how to take a newer one. Without it there was no way to
+  tell which version of the JavaScript an app was actually running — the
+  lockfile describes the Ruby, and the copy can be arbitrarily older.
+
+### Changed
+
+- The install generator copies from the engine's own controllers rather than
+  from a duplicate under `lib/generators/.../templates`. The two copies had to
+  be kept in sync by hand, and drifted the first time one was patched.
+- The CSS import step writes through the generator's file actions instead of
+  `Rails.root`, so it lands under the generator's destination like everything
+  else and can be tested without booting an application.
+
 ## [0.1.2]
 
 ### Fixed
@@ -67,7 +91,8 @@ First release.
   reachable only by hovering a mark
 - Animation stops when the reader has asked for reduced motion
 
-[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/getrailsui/railsui_charts/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/getrailsui/railsui_charts/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/getrailsui/railsui_charts/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/getrailsui/railsui_charts/releases/tag/v0.1.0

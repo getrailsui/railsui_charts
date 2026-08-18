@@ -42,7 +42,21 @@ bundle install
 rails g railsui_charts:install
 ```
 
-The generator adds the CSS import and copies the Stimulus controller. You still need ApexCharts in your JavaScript:
+The generator adds the CSS import and copies the Stimulus controllers into
+`app/javascript/controllers`. **Those copies are what your app compiles**, so
+after upgrading the gem take the new ones:
+
+```bash
+bundle update railsui_charts
+rails g railsui_charts:update
+```
+
+`bundle update` moves the Ruby and leaves the JavaScript exactly where it was —
+a fix shipped in a release does not reach the browser until you run the update
+generator and rebuild. Each copied file carries the version it came from at the
+top, so you can always see which one an app is running.
+
+You still need ApexCharts in your JavaScript:
 
 **Build mode:**
 
