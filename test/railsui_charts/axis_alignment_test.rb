@@ -46,4 +46,31 @@ class AxisAlignmentTest < Minitest::Test
 
     config[:yaxis].each { |axis| assert_operator axis.dig(:labels, :offsetX), :<, 0 }
   end
+
+  # The legend markers read as indented against the axis labels and the heading
+  # above them, because Apex insets a left-aligned legend by its own chrome and
+  # padding before the first item's margin applies. Measured on a rendered
+  # chart: offsetX 0 puts the marker 36px in with an 8px item gap.
+  def test_the_legend_starts_where_the_rest_of_the_card_starts
+    assert_equal(-36, two_series_options[:legend][:offsetX])
+  end
+
+  # The mobile override tightens the gap between items, which moves the first
+  # one too. Without a matching correction the legend lands 2px left of where
+  # the desktop one does.
+  def test_the_mobile_legend_corrects_for_its_tighter_item_gap
+    mobile = two_series_options[:responsive].first[:options][:legend]
+
+    assert_equal 6, mobile[:itemMargin][:horizontal]
+    assert_equal(-34, mobile[:offsetX])
+  end
+
+  private
+
+  def two_series_options
+    RailsuiCharts::ApexOptionsBuilder.new(
+      [{ name: "This year", data: [1, 2] }, { name: "Last year", data: [2, 3] }],
+      type: :area
+    ).build
+  end
 end

@@ -14,6 +14,9 @@ module RailsuiCharts
 
     # Both sides of a dual axis are cut into this many intervals, so one grid
     # serves both scales.
+    LEGEND_INSET = 28
+    LEGEND_ITEM_GAP = 8
+    LEGEND_MOBILE_ITEM_GAP = 6
     AXIS_INTERVALS = 4
 
     # Apex reserves a gutter between the axis labels and the edge of its canvas.
@@ -247,7 +250,13 @@ module RailsuiCharts
           breakpoint: 640,
           options: {
             chart: { height: mobile_height },
-            legend: { fontSize: font_size_sm, itemMargin: { horizontal: 6, vertical: 2 } },
+            # A tighter item gap needs a matching correction, or the mobile
+            # legend lands two pixels left of where the desktop one does.
+            legend: {
+              fontSize: font_size_sm,
+              itemMargin: { horizontal: LEGEND_MOBILE_ITEM_GAP, vertical: 2 },
+              offsetX: legend_offset(LEGEND_MOBILE_ITEM_GAP)
+            },
             xaxis: carry_over(config[:xaxis], { labels: { style: { fontSize: font_size_sm } } }),
             yaxis: mobile_yaxis(config[:yaxis]),
             grid: carry_over(config[:grid], { padding: { left: 0, right: 0 } }),
@@ -415,13 +424,26 @@ module RailsuiCharts
         show: true,
         position: "top",
         horizontalAlign: "left",
-        offsetX: -8,
+        offsetX: legend_offset(LEGEND_ITEM_GAP),
         fontFamily: font_family,
         fontSize: font_size,
         labels: { colors: config_color(:text) },
         markers: { width: 8, height: 8, radius: 8, offsetX: -2 },
-        itemMargin: { horizontal: 8, vertical: 0 }
+        itemMargin: { horizontal: LEGEND_ITEM_GAP, vertical: 0 }
       }
+    end
+
+    # Left-aligning the legend does not put it where the eye expects. Apex
+    # insets it by its own chrome and padding before the first item's margin is
+    # even applied, so the markers sit indented from the axis labels and the
+    # heading above them — every other line in the card starts at one edge and
+    # the legend starts somewhere else.
+    #
+    # Measured against a rendered chart rather than derived: at offsetX 0 the
+    # marker lands LEGEND_INSET + the item gap to the right of the card edge,
+    # and the correction is linear in offsetX.
+    def legend_offset(item_gap)
+      -(LEGEND_INSET + item_gap)
     end
 
     def comparison_fill

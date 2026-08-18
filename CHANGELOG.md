@@ -6,6 +6,17 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.1.1]
+
+### Fixed
+
+- Legend markers now start where the rest of the card does. A left-aligned
+  legend is inset by ApexCharts' own chrome and padding before the first item's
+  margin applies, so the markers sat 28px right of the axis labels and the
+  heading above them. The correction is measured against a rendered chart
+  rather than derived, and the mobile breakpoint — which uses a tighter gap
+  between items — is corrected to match.
+
 ## [0.1.0]
 
 First release.
@@ -46,5 +57,6 @@ First release.
   reachable only by hovering a mark
 - Animation stops when the reader has asked for reduced motion
 
-[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/getrailsui/railsui_charts/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/getrailsui/railsui_charts/releases/tag/v0.1.0
