@@ -524,7 +524,7 @@ rather than replacing it:
 - **Cohort and retention grids** — monthly cohorts on a single-hue ramp
 - **Treemap and bar lists** — part-to-whole past the four-slot cap, and the ranked row every overview ends with
 - **Annotations** — deploy markers, incident bands, and target lines
-- **Live updates and export** — Turbo Stream broadcasts, CSV, PNG, PDF, and scheduled digests
+- **Live updates and export** — Turbo Stream broadcasts, and PNG and CSV download
 
 Installed over GitHub with your existing credentials — no license key, nothing
 calls home:
