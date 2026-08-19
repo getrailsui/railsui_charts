@@ -30,14 +30,32 @@ if git rev-parse "v$VERSION" >/dev/null 2>&1; then
   exit 1
 fi
 
+# Checked first: the gem and the npm package go out together, and finding out
+# npm is not authenticated *after* `gem push` leaves a released version with no
+# JavaScript behind it and no way to take the release back.
+if ! npm whoami >/dev/null 2>&1; then
+  echo "Not logged in to npm. Run \`npm login\` first." >&2
+  exit 1
+fi
+
 echo "==> Tests"
 bundle exec rake test
 
 echo "==> Version $VERSION"
 printf '# frozen_string_literal: true\n\nmodule RailsuiCharts\n  VERSION = "%s"\nend\n' "$VERSION" > ./lib/railsui_charts/version.rb
+# One writer for both, because the packaging test asserts they match and a
+# subscriber reading two different numbers has no way to tell which is right.
+npm pkg set version="$VERSION"
+yarn install --silent
 bundle
 
-git add Gemfile.lock lib/railsui_charts/version.rb CHANGELOG.md
+echo "==> Build the importmap bundle"
+# Rebuilt every release: this file is what importmap applications are served,
+# and a stale one is a fix that ships to npm and not to them.
+yarn build
+
+git add Gemfile.lock lib/railsui_charts/version.rb CHANGELOG.md \
+        package.json yarn.lock app/assets/javascripts/railsui_charts.js
 
 # The first release has nothing to bump — the version file already says it.
 # `git commit` exits non-zero on an empty commit, which under `set -e` killed
@@ -57,4 +75,9 @@ gem build railsui_charts.gemspec
 trap 'rm -f "railsui_charts-$VERSION.gem"' EXIT
 gem push "railsui_charts-$VERSION.gem" --host https://rubygems.org
 
-echo "==> Published railsui_charts $VERSION"
+echo "==> npm publish"
+# --access public because a scoped package is private by default, and the first
+# publish of @getrailsui/charts would otherwise land where nobody can install it.
+npm publish --access public
+
+echo "==> Published railsui_charts $VERSION (gem and @getrailsui/charts)"

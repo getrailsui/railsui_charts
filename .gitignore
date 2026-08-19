@@ -1,2 +1,7 @@
 *.gem
 tmp/
+node_modules/
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+.pnp.*

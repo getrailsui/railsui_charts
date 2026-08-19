@@ -35,41 +35,62 @@ Add to your Gemfile:
 gem "railsui_charts"
 ```
 
-Then run:
+Then:
 
 ```bash
 bundle install
 rails g railsui_charts:install
 ```
 
-The generator adds the CSS import and copies the Stimulus controllers into
-`app/javascript/controllers`. **Those copies are what your app compiles**, so
-after upgrading the gem take the new ones:
+The generator adds the stylesheet import. The JavaScript is served from the gem
+rather than copied into your app, so `bundle update` moves all of it.
+
+### Bundled apps (esbuild, bun, rollup, webpack)
 
 ```bash
-bundle update railsui_charts
-rails g railsui_charts:update
+yarn add @getrailsui/charts apexcharts
 ```
 
-`bundle update` moves the Ruby and leaves the JavaScript exactly where it was —
-a fix shipped in a release does not reach the browser until you run the update
-generator and rebuild. Each copied file carries the version it came from at the
-top, so you can always see which one an app is running.
+```js
+// app/javascript/controllers/index.js
+import { registerRailsuiCharts } from "@getrailsui/charts"
 
-You still need ApexCharts in your JavaScript:
-
-**Build mode:**
-
-```bash
-yarn add apexcharts
+registerRailsuiCharts(application)
 ```
 
-**No-build (importmap):**
+### Importmap
+
+Nothing to add for the controllers — the engine pins them. ApexCharts is a peer
+dependency, so pin that:
 
 ```ruby
 # config/importmap.rb
 pin "apexcharts", to: "https://esm.sh/apexcharts@3.45.2"
 ```
+
+```js
+// app/javascript/controllers/index.js
+import { registerRailsuiCharts } from "@getrailsui/charts"
+
+registerRailsuiCharts(application)
+```
+
+### Upgrading from 0.1.x
+
+0.1.x copied the controllers into `app/javascript/controllers`. Those copies are
+frozen at whatever version installed them — `bundle update` moved the Ruby and
+left them alone, which is the reason this changed. Delete them and follow one of
+the paths above:
+
+```bash
+rm app/javascript/controllers/railsui_chart_controller.js \
+   app/javascript/controllers/railsui_chart_filters_controller.js \
+   app/javascript/controllers/railsui_metric_dialog_controller.js
+```
+
+Leaving them in place registers the same identifiers twice. Stimulus keeps the
+last registration and says nothing about it, so the symptom is a chart behaving
+like an older version of itself.
 
 ## Usage
 

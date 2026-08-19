@@ -1,23 +1,13 @@
 require "rails/generators"
-require_relative "../stamped"
 
 module RailsuiCharts
   module Generators
     class InstallGenerator < Rails::Generators::Base
-      # Points at the controllers the engine already ships rather than at a
-      # `templates/` copy of them. A second copy is a second thing to remember
-      # to fix, and the two drift the first time one of them is patched.
-      source_root File.expand_path("../../../../app/javascript/controllers", __dir__)
-
-      CONTROLLERS = %w[
-        railsui_chart_controller.js
-        railsui_chart_filters_controller.js
-        railsui_metric_dialog_controller.js
-      ].freeze
-
-      # Written through the generator's own file actions rather than
-      # Rails.root, so it lands under destination_root like everything else a
-      # generator writes — and so it can be tested without booting an app.
+      # The JavaScript is no longer copied. It used to be, and that meant
+      # `bundle update` moved the Ruby while the controllers stayed on whatever
+      # version was installed — a fix could ship and reach nobody. Bundled apps
+      # take it from npm, importmap apps from the pin this engine adds, and both
+      # follow the gem from then on.
       def add_css_import
         path = "app/assets/tailwind/application.css"
         import_statement = %q(@import "../../stylesheets/railsui_charts";)
@@ -37,26 +27,40 @@ module RailsuiCharts
         end
       end
 
-      def copy_stimulus_controllers
-        CONTROLLERS.each do |controller|
-          create_file "app/javascript/controllers/#{controller}",
-                      RailsuiCharts::Generators.stamped(self.class.source_root, controller)
-        end
-      end
-
       def print_next_steps
         say ""
-        say "RailsUI Charts installed.", :green
+        say "RailsUI Charts #{RailsuiCharts::VERSION} installed.", :green
         say ""
-        say "Next steps:", :cyan
-        say "  1. Add the ApexCharts dependency for your JS setup:", :cyan
-        say "     Build mode:  yarn add apexcharts", :cyan
-        say "     No-build:    pin \"apexcharts\", to: \"https://esm.sh/apexcharts@3.45.2\"", :cyan
-        say "  2. Use <%= railsui_chart data, type: :area %> in your views.", :cyan
+
+        if importmap?
+          say "Your importmap already has the controllers — this engine pins them.", :cyan
+          say "Register them in app/javascript/controllers/index.js:", :cyan
+        else
+          say "Add the JavaScript package and ApexCharts:", :cyan
+          say "  yarn add @getrailsui/charts apexcharts", :cyan
+          say ""
+          say "Then register the controllers in app/javascript/controllers/index.js:", :cyan
+        end
+
         say ""
-        say "After upgrading the gem, run `rails g railsui_charts:update`.", :cyan
-        say "The controllers above are copies — bundle update does not touch them.", :cyan
+        say '  import { registerRailsuiCharts } from "@getrailsui/charts"', :cyan
+        say "  registerRailsuiCharts(application)", :cyan
         say ""
+
+        if importmap?
+          say "ApexCharts is a peer dependency; pin it too:", :cyan
+          say '  pin "apexcharts", to: "https://esm.sh/apexcharts@3.45.2"', :cyan
+          say ""
+        end
+
+        say "Then use <%= railsui_chart data, type: :area %> in your views.", :cyan
+        say ""
+      end
+
+      private
+
+      def importmap?
+        File.exist?(File.join(destination_root, "config/importmap.rb"))
       end
     end
   end

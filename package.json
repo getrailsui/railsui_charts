@@ -1,0 +1,37 @@
+{
+  "name": "@getrailsui/charts",
+  "version": "0.2.0",
+  "description": "Rails-native chart components built on ApexCharts. Stimulus controllers for the railsui_charts gem.",
+  "author": "Andy Leverenz <railsui@justalever.com>",
+  "license": "MIT",
+  "homepage": "https://railsui.com/charts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getrailsui/railsui_charts.git"
+  },
+  "type": "module",
+  "main": "app/javascript/railsui_charts/index.js",
+  "module": "app/javascript/railsui_charts/index.js",
+  "exports": {
+    ".": "./app/javascript/railsui_charts/index.js",
+    "./controllers/*": "./app/javascript/controllers/*"
+  },
+  "files": [
+    "app/javascript",
+    "app/assets/javascripts",
+    "README.md",
+    "LICENSE.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "esbuild app/javascript/railsui_charts/index.js --bundle --format=esm --external:@hotwired/stimulus --external:apexcharts --outfile=app/assets/javascripts/railsui_charts.js"
+  },
+  "peerDependencies": {
+    "@hotwired/stimulus": ">=3.0.0",
+    "apexcharts": ">=3.45.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "sideEffects": false
+}

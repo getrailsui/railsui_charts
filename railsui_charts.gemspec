@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
     "rubygems_mfa_required" => "true"
   }
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir["{app,config,lib}/**/*", "README.md", "LICENSE.md", "CHANGELOG.md", "Rakefile"].reject do |f|
+    Dir["{app,config,lib}/**/*", "README.md", "LICENSE.md", "CHANGELOG.md", "Rakefile", "package.json"].reject do |f|
       File.directory?(f) || f.match(%r{\A(?:test|spec|features)/})
     end
   end
