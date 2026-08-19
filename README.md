@@ -550,7 +550,7 @@ The Stimulus controller initializes charts on `connect` and destroys them on `di
 
 ## Full access
 
-A Rails UI membership adds `railsui_charts_pro`, which builds on this gem
+A Rails UI subscription adds `railsui_charts_pro`, which builds on this gem
 rather than replacing it:
 
 - **Time series** — `TimeSeries` fills the gaps a `GROUP BY` leaves behind, buckets to any interval, and sums rows that collapse together
