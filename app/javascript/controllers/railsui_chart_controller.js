@@ -113,7 +113,7 @@ export default class extends Controller {
     // `tooltip_style: false` hands the tooltip back to Apex; passing your own
     // `tooltip.custom` also wins.
     if (options.tooltip_style === false) return options
-    if (options.tooltip?.custom || options.chart?.sparkline?.enabled) return options
+    if (options.tooltip?.custom) return options
 
     const format = this.formatterFor(options.format || "number", options.currency)
     // One formatter per series on a combo, so a currency row and a percentage
@@ -130,6 +130,16 @@ export default class extends Controller {
         ...(options.tooltip || {}),
         custom: ({ series, seriesIndex, dataPointIndex, w }) => {
           const labels = w.globals.categoryLabels?.length ? w.globals.categoryLabels : w.globals.labels
+
+          if (options.chart?.type === "rangeBar") {
+            return this.rangeBarTooltipMarkup({ series, seriesIndex, dataPointIndex, w }, options, format)
+          }
+
+          const configuredPoint = this.configuredPoint(options, w, seriesIndex, dataPointIndex)
+
+          if (this.labelledPoint(configuredPoint)) {
+            return this.labelledPointTooltipMarkup({ series, seriesIndex, dataPointIndex, w }, options, format)
+          }
 
           // A pie, donut or polar area hands back one number per slice rather
           // than one array per series, and names the hovered slice with
@@ -169,6 +179,127 @@ export default class extends Controller {
         }
       }
     }
+  }
+
+  configuredPoint(options, w, seriesIndex, dataPointIndex) {
+    return (w.config?.series?.[seriesIndex] || options.series?.[seriesIndex] || {}).data?.[dataPointIndex]
+  }
+
+  labelledPoint(point) {
+    return point !== null && typeof point === "object" && !Array.isArray(point) && "x" in point && "y" in point
+  }
+
+  labelledPointTooltipMarkup({ series, seriesIndex, dataPointIndex, w }, options, format) {
+    const configuredSeries = w.config?.series?.[seriesIndex] || options.series?.[seriesIndex] || {}
+    const point = this.configuredPoint(options, w, seriesIndex, dataPointIndex) || {}
+    const title = point.name || point.label || point.x || configuredSeries.name
+    const row = {
+      label: configuredSeries.name || "Value",
+      value: point.y ?? series?.[seriesIndex]?.[dataPointIndex],
+      color: this.pointColor(options, w, seriesIndex, dataPointIndex),
+      format: null
+    }
+
+    return this.tooltipMarkup(title, [row], null, format)
+  }
+
+  rangeBarTooltipMarkup({ series, seriesIndex, dataPointIndex, w }, options, format) {
+    const configuredSeries = w.config?.series?.[seriesIndex] || options.series?.[seriesIndex] || {}
+    const point = configuredSeries.data?.[dataPointIndex] || {}
+    const fallbackValue = series?.[seriesIndex]?.[dataPointIndex]
+    const value = Array.isArray(point.y) ? point.y : fallbackValue
+    const title = point.name || point.label || point.meta?.label || point.x || w.globals.categoryLabels?.[dataPointIndex] || w.globals.labels?.[dataPointIndex] || configuredSeries.name
+    const rowLabel = point.name || point.label || point.meta?.label ? (point.x || configuredSeries.name || "Range") : "Range"
+
+    const row = {
+      label: rowLabel,
+      value: this.formatRangeValue(value, options, format),
+      color: this.pointColor(options, w, seriesIndex, dataPointIndex),
+      format: null
+    }
+
+    return this.tooltipMarkup(title, [row], null, null)
+  }
+
+  pointColor(options, w, seriesIndex, dataPointIndex) {
+    if (options.plotOptions?.bar?.distributed && Array.isArray(options.colors)) {
+      return options.colors[dataPointIndex] || w.globals.colors?.[dataPointIndex] || w.globals.colors?.[seriesIndex]
+    }
+
+    if (options.plotOptions?.treemap?.distributed && Array.isArray(options.colors)) {
+      return options.colors[dataPointIndex] || w.globals.colors?.[dataPointIndex] || w.globals.colors?.[seriesIndex]
+    }
+
+    return w.globals.colors?.[seriesIndex] || options.colors?.[seriesIndex] || options.colors?.[0]
+  }
+
+  formatRangeValue(value, options, format) {
+    const values = Array.isArray(value) ? value : [value]
+    const present = values.filter((entry) => entry !== null && entry !== undefined)
+
+    if (present.length === 0) return null
+
+    if (present.length === 2 && present.every((entry) => this.timestampLike(entry))) {
+      const [start, finish] = present
+
+      if (this.sameTimestampDay(start, finish, options)) {
+        const startTime = this.formatTimestampTime(start, options)
+        const finishTime = this.formatTimestampTime(finish, options)
+
+        return startTime === finishTime
+          ? `${this.formatTimestampDate(start, options)}, ${startTime}`
+          : `${this.formatTimestampDate(start, options)}, ${startTime} - ${finishTime}`
+      }
+    }
+
+    const formatted = present.map((entry) => this.formatRangeEndpoint(entry, options, format))
+    if (formatted.length === 1 || formatted[0] === formatted[1]) return formatted[0]
+
+    return `${formatted[0]} - ${formatted[formatted.length - 1]}`
+  }
+
+  formatRangeEndpoint(value, options, format) {
+    if (this.timestampLike(value)) return `${this.formatTimestampDate(value, options)}, ${this.formatTimestampTime(value, options)}`
+    if (format) return format(value)
+
+    return value
+  }
+
+  timestampLike(value) {
+    return typeof value === "number" && Number.isFinite(value) && Math.abs(value) >= 100_000_000_000
+  }
+
+  sameTimestampDay(left, right, options) {
+    const leftDate = new Date(left)
+    const rightDate = new Date(right)
+
+    if (this.datetimeUTC(options)) {
+      return leftDate.toISOString().slice(0, 10) === rightDate.toISOString().slice(0, 10)
+    }
+
+    return leftDate.getFullYear() === rightDate.getFullYear()
+      && leftDate.getMonth() === rightDate.getMonth()
+      && leftDate.getDate() === rightDate.getDate()
+  }
+
+  formatTimestampDate(value, options) {
+    return new Intl.DateTimeFormat("en-US", {
+      ...(this.datetimeUTC(options) ? { timeZone: "UTC" } : {}),
+      month: "short",
+      day: "numeric"
+    }).format(new Date(value))
+  }
+
+  formatTimestampTime(value, options) {
+    return new Intl.DateTimeFormat("en-US", {
+      ...(this.datetimeUTC(options) ? { timeZone: "UTC" } : {}),
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(new Date(value))
+  }
+
+  datetimeUTC(options) {
+    return options.xaxis?.labels?.datetimeUTC !== false
   }
 
   tooltipDelta(current, previous, upIsGood) {

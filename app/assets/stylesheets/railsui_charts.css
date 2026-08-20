@@ -171,12 +171,22 @@
 }
 
 .railsui-chart-state--loading {
+  align-items: center;
+  justify-content: flex-start;
   border-style: none;
-  padding: 0;
+  padding: 1rem;
+  text-align: left;
+}
+
+.railsui-chart-state--loading-center {
+  justify-content: center;
+}
+
+.railsui-chart-state--loading-right {
+  justify-content: flex-end;
 }
 
 /* Shared placeholder surface: a fill plus the sheen that crosses it. */
-.railsui-chart-skeleton,
 .railsui-skeleton-bar {
   position: relative;
   overflow: hidden;
@@ -196,30 +206,33 @@
 .railsui-skeleton-bar--meta { width: 7rem; height: 0.75rem; }
 .railsui-skeleton-bar--footer { width: 6.5rem; height: 0.75rem; }
 
-/* Gridlines rather than a plain block, so a standalone chart placeholder still
-   reads as a chart arriving. */
+/* Same rule as the metric card skeleton: stand in for surrounding text and
+   controls, but leave the plot area empty. A filled chart slab claims too much
+   about data that has not arrived. */
 .railsui-chart-skeleton {
-  display: block;
-  width: 100%;
-  min-height: inherit;
-  align-self: stretch;
-  border-radius: 0.5rem;
-  /* Its own line colour, softer than a real gridline. A placeholder should
-     suggest the shape of what is coming without competing with the charts
-     already on screen around it. */
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--rui-chart-skeleton-line) 0,
-    var(--rui-chart-skeleton-line) 1px,
-    transparent 1px,
-    transparent 25%
-  );
+  display: flex;
+  flex-direction: column;
+  width: clamp(18rem, 48%, 42rem);
+  max-width: 100%;
+  gap: 0.5rem;
 }
 
-/* A sheen sweeping across, rather than the whole block breathing. Pulsing
-   opacity dims the gridlines too and reads as a broken element; a sweep reads
-   as work in progress. */
-.railsui-chart-skeleton::after,
+.railsui-chart-skeleton .railsui-skeleton-bar--label { width: 36%; }
+.railsui-chart-skeleton .railsui-skeleton-bar--value { width: 76%; }
+.railsui-chart-skeleton .railsui-skeleton-bar--meta { width: 54%; }
+.railsui-chart-skeleton .railsui-skeleton-bar--footer { width: 48%; }
+
+.railsui-chart-skeleton__plot {
+  display: block;
+  min-height: 4rem;
+}
+
+.railsui-chart-skeleton .railsui-skeleton-bar--footer {
+  margin-top: 0.25rem;
+}
+
+/* A sheen sweeping across, rather than the whole block breathing. Pulsing reads
+   as a broken element; a sweep reads as work in progress. */
 .railsui-skeleton-bar::after {
   content: "";
   position: absolute;
@@ -232,16 +245,6 @@
     transparent 100%
   );
   animation: railsui-chart-sweep 1.6s ease-in-out infinite;
-}
-
-/* Circular forms get a disc, so the placeholder is the shape of the thing
-   being waited on. */
-.railsui-chart-skeleton--circular {
-  width: auto;
-  aspect-ratio: 1;
-  margin: 0 auto;
-  border-radius: 9999px;
-  background-image: none;
 }
 
 @keyframes railsui-chart-sweep {
@@ -259,7 +262,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   /* The skeleton still reads as a placeholder standing still. */
-  .railsui-chart-skeleton::after,
   .railsui-skeleton-bar::after {
     animation: none;
     opacity: 0.4;

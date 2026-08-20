@@ -152,7 +152,10 @@ module RailsuiCharts
         case point
         when Hash
           point = point.symbolize_keys if point.respond_to?(:symbolize_keys)
-          { x: point[:x], y: span_or_value(point), z: point[:z] }
+          normalized = { x: point[:x], y: span_or_value(point), z: point[:z] }
+          normalized[:meta] = point[:meta] if point.key?(:meta)
+          normalized[:name] = point[:name] if point.key?(:name)
+          normalized
         when Array
           { x: point[0], y: point[1], z: point[2] }
         else
@@ -551,7 +554,12 @@ module RailsuiCharts
       when :range_bar
         # Both ends stay in the point. A range read off an axis is only half a
         # range, and the label names the row rather than a position on a scale.
-        points.map { |point| { x: point[:x], y: Array(point[:y]).map { |edge| range_edge(edge) } } }
+        points.map do |point|
+          range = { x: point[:x], y: Array(point[:y]).map { |edge| range_edge(edge) } }
+          range[:meta] = point[:meta] if point.key?(:meta)
+          range[:name] = point[:name] if point.key?(:name)
+          range
+        end
       else
         # A registered type may draw its own labels rather than read them off an
         # axis, in which case flattening the point to a value loses them.

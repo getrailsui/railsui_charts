@@ -80,22 +80,37 @@ module RailsuiCharts
     end
 
     # Server-rendered placeholder for a chart whose data has not arrived yet —
-    # the thing a Turbo frame shows before it swaps in the real one. Pass the
-    # `type:` it will become so the placeholder is the shape being waited on.
-    def railsui_chart_skeleton(height: nil, type: :line, label: "Loading chart")
-      classes = ["railsui-chart-skeleton"]
-      classes << "railsui-chart-skeleton--circular" if CIRCULAR_TYPES.include?(type.to_sym)
+    # the thing a Turbo frame shows before it swaps in the real one. It keeps
+    # the chart footprint and avoids drawing fake chart geometry before data
+    # exists.
+    def railsui_chart_skeleton(height: nil, type: :line, label: "Loading chart", align: :left)
+      alignment = skeleton_alignment(align)
 
       content_tag(:div,
-                  class: "railsui-chart-state railsui-chart-state--loading",
+                  class: "railsui-chart-state railsui-chart-state--loading railsui-chart-state--loading-#{alignment}",
                   style: state_height(height),
                   role: "status",
                   aria: { label: label, busy: true }) do
-        content_tag(:span, "", class: classes.join(" "), aria: { hidden: true })
+        content_tag(:div, class: "railsui-chart-skeleton", aria: { hidden: true }) do
+          safe_join([
+            content_tag(:span, "", class: "railsui-skeleton-bar railsui-skeleton-bar--label"),
+            content_tag(:span, "", class: "railsui-skeleton-bar railsui-skeleton-bar--value"),
+            content_tag(:span, "", class: "railsui-skeleton-bar railsui-skeleton-bar--meta"),
+            content_tag(:span, "", class: "railsui-chart-skeleton__plot"),
+            content_tag(:span, "", class: "railsui-skeleton-bar railsui-skeleton-bar--footer")
+          ])
+        end
       end
     end
 
     private
+
+    def skeleton_alignment(align)
+      alignment = align.to_sym
+      return alignment if %i[left center right].include?(alignment)
+
+      raise ArgumentError, "Unsupported skeleton alignment: #{align}. Supported: left, center, right"
+    end
 
     def chart_state(kind, title:, description:, height:)
       content_tag(:div,
@@ -149,6 +164,7 @@ module RailsuiCharts
         columns = Array(series).map { |s| { name: s[:name] || "Value", data: s[:data] } }
         categories = config.dig(:xaxis, :categories) || []
       end
+      comparison_categories = config[:compare_categories] || []
 
       rows = columns.first&.dig(:data)
       return if rows.blank?
@@ -159,7 +175,7 @@ module RailsuiCharts
           content_tag(:thead) do
             content_tag(:tr) do
               safe_join(
-                [content_tag(:th, "Category")] +
+                accessibility_category_headers(comparison_categories) +
                   columns.map { |column| content_tag(:th, column[:name]) }
               )
             end
@@ -169,7 +185,7 @@ module RailsuiCharts
               rows.each_with_index.map do |_, index|
                 content_tag(:tr) do
                   safe_join(
-                    [content_tag(:td, categories[index] || index + 1)] +
+                    accessibility_category_cells(categories, comparison_categories, index) +
                       columns.map { |column| content_tag(:td, cell_value(column[:data][index])) }
                   )
                 end
@@ -178,6 +194,18 @@ module RailsuiCharts
           end
         ])
       end
+    end
+
+    def accessibility_category_headers(comparison_categories)
+      headers = [content_tag(:th, "Category")]
+      headers << content_tag(:th, "Comparison category") if comparison_categories.present?
+      headers
+    end
+
+    def accessibility_category_cells(categories, comparison_categories, index)
+      cells = [content_tag(:td, categories[index] || index + 1)]
+      cells << content_tag(:td, comparison_categories[index] || index + 1) if comparison_categories.present?
+      cells
     end
 
     def cell_value(value)

@@ -40,6 +40,14 @@ class RangeBarTest < Minitest::Test
     assert_equal 2, point[:y].length
   end
 
+  def test_point_metadata_survives_for_the_tooltip
+    point = build([{ x: "api", name: "API recovery", meta: { kind: "deploy" }, from: FROM, to: TO }])[:series].first[:data].first
+
+    assert_equal "api", point[:x]
+    assert_equal "API recovery", point[:name]
+    assert_equal({ kind: "deploy" }, point[:meta])
+  end
+
   def test_a_plain_number_range_is_left_alone
     # Not every range is about time.
     point = build([{ x: "Band", y: [10, 40] }])[:series].first[:data].first

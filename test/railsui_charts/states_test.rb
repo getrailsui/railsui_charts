@@ -40,19 +40,29 @@ class StatesTest < Minitest::Test
     html = railsui_chart_skeleton(height: 280)
 
     assert_includes html, "railsui-chart-state--loading"
+    assert_includes html, "railsui-chart-state--loading-left"
     assert_includes html, "min-height: 280px"
     assert_includes html, 'aria-busy="true"'
     assert_includes html, "railsui-chart-skeleton"
+    assert_includes html, "railsui-chart-skeleton__plot"
   end
 
-  def test_skeleton_takes_the_shape_of_the_chart_being_waited_on
-    %i[pie donut polar_area radar].each do |type|
-      assert_includes railsui_chart_skeleton(type: type), "railsui-chart-skeleton--circular", "#{type} should wait as a disc"
+  def test_skeleton_alignment_can_be_changed
+    assert_includes railsui_chart_skeleton(align: :center), "railsui-chart-state--loading-center"
+    assert_includes railsui_chart_skeleton(align: "right"), "railsui-chart-state--loading-right"
+
+    error = assert_raises(ArgumentError) { railsui_chart_skeleton(align: :middle) }
+    assert_includes error.message, "Unsupported skeleton alignment"
+  end
+
+  def test_chart_skeleton_does_not_fake_chart_geometry
+    html = railsui_chart_skeleton(type: :donut)
+
+    %w[label value meta footer].each do |part|
+      assert_includes html, "railsui-skeleton-bar--#{part}"
     end
 
-    %i[line area bar column scatter].each do |type|
-      refute_includes railsui_chart_skeleton(type: type), "railsui-chart-skeleton--circular", "#{type} should wait as a plot area"
-    end
+    refute_includes html, "railsui-chart-skeleton--circular"
   end
 
   def test_metric_card_skeleton_stands_in_for_text_not_for_the_plot

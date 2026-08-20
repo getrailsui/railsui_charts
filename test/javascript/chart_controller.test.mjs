@@ -146,6 +146,111 @@ describe("escape", () => {
   })
 })
 
+describe("applyTooltip on sparklines", () => {
+  const render = (options, payload) => controller().applyTooltip(options).tooltip.custom(payload)
+
+  test("the hovered point carries a label and value", () => {
+    const html = render(
+      { format: "number", chart: { sparkline: { enabled: true } } },
+      {
+        series: [[18, 22, 19]],
+        seriesIndex: 0,
+        dataPointIndex: 1,
+        w: { globals: { labels: ["Mon", "Tue", "Wed"], colors: ["#6366f1"], seriesNames: ["Page views"] } }
+      }
+    )
+
+    assert.match(html, /Tue/)
+    assert.match(html, /Page views/)
+    assert.match(html, /22/)
+  })
+})
+
+describe("applyTooltip on range bars", () => {
+  const start = Date.UTC(2026, 7, 10, 9, 0)
+  const finish = Date.UTC(2026, 7, 10, 11, 30)
+  const options = {
+    chart: { type: "rangeBar" },
+    colors: ["#047857", "#b91c1c", "#d97706"],
+    plotOptions: { bar: { distributed: true, horizontal: true } },
+    series: [{ name: "Timeline", data: [
+      { x: "web", y: [start, start + 1_200_000] },
+      { x: "api", y: [start + 600_000, start + 2_400_000] },
+      { x: "worker", y: [start, finish] }
+    ] }],
+    xaxis: { type: "datetime" }
+  }
+
+  const render = (pointIndex) => controller().applyTooltip(options).tooltip.custom({
+    series: [[start + 1_200_000, start + 2_400_000, finish]],
+    seriesIndex: 0,
+    dataPointIndex: pointIndex,
+    w: {
+      config: { series: options.series },
+      globals: { labels: ["web", "api", "worker"], colors: options.colors, seriesNames: ["Timeline"] }
+    }
+  })
+
+  test("the hovered bar carries its own label, color, and range", () => {
+    const html = render(2)
+
+    assert.match(html, /worker/)
+    assert.match(html, /#d97706/)
+    assert.match(html, /Aug 10/)
+    assert.match(html, /9:00 AM - 11:30 AM/)
+    assert.doesNotMatch(html, /1,786,361,400,000/)
+  })
+
+  test("the color follows the hovered distributed bar", () => {
+    const html = render(1)
+
+    assert.match(html, /api/)
+    assert.match(html, /#b91c1c/)
+    assert.doesNotMatch(html, /#047857/)
+  })
+})
+
+describe("applyTooltip on labelled point charts", () => {
+  const options = {
+    chart: { type: "treemap" },
+    format: "short_currency",
+    colors: ["#312e81", "#4338ca", "#6366f1"],
+    plotOptions: { treemap: { distributed: true, enableShades: false } },
+    series: [{ name: "Spend", data: [
+      { x: "Salaries", y: 128_400 },
+      { x: "Infrastructure", y: 74_000 },
+      { x: "Tooling", y: 31_000 }
+    ] }]
+  }
+
+  const render = (pointIndex) => controller().applyTooltip(options).tooltip.custom({
+    series: [[128_400, 74_000, 31_000]],
+    seriesIndex: 0,
+    dataPointIndex: pointIndex,
+    w: {
+      config: { series: options.series },
+      globals: { labels: [], colors: options.colors, seriesNames: ["Spend"] }
+    }
+  })
+
+  test("the hovered rectangle carries its own label, color, and value", () => {
+    const html = render(0)
+
+    assert.match(html, /Salaries/)
+    assert.match(html, /Spend/)
+    assert.match(html, /\$128\.4K/)
+    assert.match(html, /#312e81/)
+  })
+
+  test("the color follows the hovered rectangle", () => {
+    const html = render(2)
+
+    assert.match(html, /Tooling/)
+    assert.match(html, /#6366f1/)
+    assert.doesNotMatch(html, /#312e81/)
+  })
+})
+
 describe("resolveCssVariable", () => {
   const withComputed = (value) => {
     const instance = controller()
@@ -216,4 +321,3 @@ describe("applyTooltip on circular charts", () => {
     assert.match(html, /B/)
   })
 })
-

@@ -42,6 +42,19 @@ class ChartHelperTest < Minitest::Test
     assert_includes html, "<th>Last week</th>"
   end
 
+  def test_accessible_table_labels_comparison_categories
+    html = railsui_chart(
+      [{ x: "Aug 8", y: 10 }, { x: "Aug 9", y: 20 }],
+      type: :line,
+      compare: [{ x: "Aug 1", y: 8 }, { x: "Aug 2", y: 16 }],
+      label: "This week",
+      compare_label: "Last week"
+    )
+
+    assert_includes html, "<th>Comparison category</th>"
+    assert_includes html, "<td>Aug 8</td><td>Aug 1</td><td>10</td><td>8</td>"
+  end
+
   def test_renders_metric_card
     html = railsui_metric_card(
       label: "MRR",

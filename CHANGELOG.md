@@ -6,6 +6,19 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+### Fixed
+
+- Sparkline charts now use the Rails UI tooltip renderer, so hovered points show
+  their label and formatted value instead of an empty tooltip.
+- Range-bar and labelled-point tooltips now read the hovered point from the
+  chart config, so timelines and treemaps show the right title, value, and
+  distributed color.
+- Range-bar points keep their `name` and `meta` payloads for tooltip consumers.
+- Chart loading skeletons now follow the same treatment as metric cards: they
+  reserve the footprint, show lightweight skeleton bars, and leave the plot area
+  empty until real data arrives. They align left by default and accept
+  `align: :center` or `align: :right` when a layout needs it.
+
 ## [0.2.0]
 
 The JavaScript now comes from the gem instead of being copied into the
