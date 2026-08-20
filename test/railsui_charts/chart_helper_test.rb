@@ -83,9 +83,13 @@ class ChartHelperTest < Minitest::Test
 
     assert_includes html, "railsui-metric-dialog"
     assert_includes html, "railsui-metric-dialog#open"
+    assert_includes html, "cancel-&gt;railsui-metric-dialog#cancel"
+    assert_includes html, "railsui-metric-dialog__close-icon"
+    refute_includes html, "&times;"
     # A button, not a link — it goes nowhere.
     assert_includes html, "<button"
     assert_includes html, "&quot;height&quot;:420"
+    assert_includes html, "&quot;right&quot;:48"
   end
 
   def test_expanding_needs_something_to_expand

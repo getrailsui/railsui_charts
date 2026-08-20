@@ -146,14 +146,17 @@ module RailsuiCharts
     def metric_dialog(label, value, change, previous, history, compare, format, positive_is_good, options)
       content_tag(:dialog,
                   class: "railsui-metric-dialog",
-                  data: { "railsui-metric-dialog-target": "dialog", action: "click->railsui-metric-dialog#closeOnBackdrop" }) do
+                  data: {
+                    "railsui-metric-dialog-target": "dialog",
+                    action: "click->railsui-metric-dialog#closeOnBackdrop cancel->railsui-metric-dialog#cancel"
+                  }) do
         content_tag(:div, class: "railsui-metric-dialog__panel") do
           safe_join([
             content_tag(:div, class: "railsui-metric-dialog__head") do
               safe_join([
                 metric_card_head(label, value, change, previous, format, positive_is_good),
-                content_tag(:button, "&times;".html_safe, type: "button", class: "railsui-metric-dialog__close",
-                                                          aria: { label: "Close" }, data: { action: "railsui-metric-dialog#close" })
+                content_tag(:button, metric_dialog_close_icon, type: "button", class: "railsui-metric-dialog__close",
+                                                                 aria: { label: "Close" }, data: { action: "railsui-metric-dialog#close" })
               ])
             end,
             # Room to read values rather than just a trend, so the axis labels
@@ -161,10 +164,21 @@ module RailsuiCharts
             # so the outermost two need room or Apex clips them at the canvas.
             railsui_chart(history, type: :line, compare: compare, format: format, height: 420,
                                    axis: :right, legend: { show: compare.present? },
-                                   grid: { padding: { left: 28, right: 12 } }, **options)
+                                   grid: { padding: { left: 32, right: 48 } }, **options)
           ])
         end
       end
+    end
+
+    def metric_dialog_close_icon
+      content_tag(:svg,
+                  content_tag(:path, "", "stroke-linecap": "round", "stroke-linejoin": "round", d: "M6 18 18 6M6 6l12 12"),
+                  class: "railsui-metric-dialog__close-icon",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "currentColor",
+                  "stroke-width": 1.5,
+                  aria: { hidden: true })
     end
 
     def format_metric_value(value, format)

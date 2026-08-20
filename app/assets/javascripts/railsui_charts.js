@@ -448,18 +448,49 @@ import { Controller as Controller3 } from "@hotwired/stimulus";
 var railsui_metric_dialog_controller_default = class extends Controller3 {
   static targets = ["dialog"];
   open() {
+    this.dialogTarget.classList.remove("railsui-metric-dialog--closing");
     this.dialogTarget.showModal();
-    this.dialogTarget.querySelectorAll(".railsui-chart").forEach((chart) => {
-      chart.dispatchEvent(new CustomEvent("railsui-chart:refresh"));
+    requestAnimationFrame(() => {
+      this.dialogTarget.classList.add("railsui-metric-dialog--open");
+      this.refreshCharts();
     });
   }
   close() {
-    this.dialogTarget.close();
+    this.closeDialog();
+  }
+  cancel(event) {
+    event.preventDefault();
+    this.closeDialog();
   }
   // Clicking the backdrop lands on the dialog element itself; a click anywhere
   // inside lands on a child.
   closeOnBackdrop(event) {
-    if (event.target === this.dialogTarget) this.dialogTarget.close();
+    if (event.target === this.dialogTarget) this.closeDialog();
+  }
+  refreshCharts() {
+    this.dialogTarget.querySelectorAll(".railsui-chart").forEach((chart) => {
+      chart.dispatchEvent(new CustomEvent("railsui-chart:refresh"));
+    });
+  }
+  closeDialog() {
+    const dialog = this.dialogTarget;
+    if (!dialog.open) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      dialog.classList.remove("railsui-metric-dialog--open", "railsui-metric-dialog--closing");
+      dialog.close();
+      return;
+    }
+    dialog.classList.remove("railsui-metric-dialog--open");
+    dialog.classList.add("railsui-metric-dialog--closing");
+    let closed = false;
+    const finish = () => {
+      if (closed) return;
+      closed = true;
+      dialog.classList.remove("railsui-metric-dialog--closing");
+      dialog.close();
+    };
+    dialog.addEventListener("transitionend", finish, { once: true });
+    setTimeout(finish, 240);
   }
 };
 

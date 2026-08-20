@@ -568,22 +568,41 @@
 /* --------------------------------------------------------- expanded view */
 
 .railsui-metric-dialog {
-  width: min(56rem, calc(100vw - 2rem));
-  max-height: calc(100vh - 4rem);
+  width: min(64rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
   padding: 0;
   border: 1px solid var(--rui-chart-border);
   border-radius: 0.75rem;
   background-color: var(--rui-chart-surface);
   color: var(--rui-chart-metric-value);
-  overflow: hidden;
+  opacity: 0;
+  overflow: auto;
+  transform: translateY(0.5rem) scale(0.98);
+  transition: opacity 160ms ease, transform 180ms ease;
 }
 
 .railsui-metric-dialog::backdrop {
-  background-color: rgba(15, 23, 42, 0.5);
+  background-color: transparent;
+  transition: background-color 160ms ease;
+}
+
+.railsui-metric-dialog--open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.railsui-metric-dialog--open::backdrop {
+  background-color: rgba(15, 23, 42, 0.48);
+}
+
+.railsui-metric-dialog--closing {
+  opacity: 0;
+  transform: translateY(0.25rem) scale(0.99);
 }
 
 .railsui-metric-dialog__panel {
-  padding: 1.25rem 1.5rem 1.5rem;
+  min-width: 0;
+  padding: 1.25rem 1.75rem 1.5rem;
 }
 
 .railsui-metric-dialog__head {
@@ -595,21 +614,60 @@
 }
 
 .railsui-metric-dialog__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   border: 0;
-  border-radius: 9999px;
+  border-radius: 0.375rem;
   background-color: transparent;
   color: var(--rui-chart-metric-muted);
-  font-size: 1.25rem;
-  line-height: 1;
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
-.railsui-metric-dialog__close:hover {
+.railsui-metric-dialog__close:hover,
+.railsui-metric-dialog__close:focus-visible {
   background-color: var(--rui-chart-hover);
+  color: var(--rui-chart-metric-value);
+}
+
+.railsui-metric-dialog__close:focus-visible {
+  outline: 2px solid var(--rui-chart-primary);
+  outline-offset: 2px;
+}
+
+.railsui-metric-dialog__close-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .railsui-metric-dialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 0.625rem;
+  }
+
+  .railsui-metric-dialog__panel {
+    padding: 1rem;
+  }
+
+  .railsui-metric-dialog__head {
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .railsui-metric-dialog,
+  .railsui-metric-dialog::backdrop,
+  .railsui-metric-dialog__close {
+    transition: none;
+  }
 }
 
 /* ---------------------------------------------------------------- deltas */
