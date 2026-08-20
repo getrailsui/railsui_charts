@@ -160,14 +160,22 @@ module RailsuiCharts
               ])
             end,
             # Room to read values rather than just a trend, so the axis labels
-            # the card suppresses come back. They centre on their data point,
-            # so the outermost two need room or Apex clips them at the canvas.
-            railsui_chart(history, type: :line, compare: compare, format: format, height: 420,
-                                   axis: :right, legend: { show: compare.present? },
-                                   grid: { padding: { left: 32, right: 48 } }, **options)
+            # the card suppresses come back. The header keeps the exact value;
+            # the axis uses compact labels so it stays legible inside the
+            # dialog without clipping at the canvas edge.
+            content_tag(:div, class: "railsui-metric-dialog__chart") do
+              railsui_chart(history, type: :line, compare: compare, format: metric_dialog_chart_format(format), height: 420,
+                                     axis: :right, legend: { show: compare.present? },
+                                     yaxis: { labels: { minWidth: 48, maxWidth: 72, offsetX: 4 } },
+                                     grid: { padding: { left: 32, right: 72 } }, **options)
+            end
           ])
         end
       end
+    end
+
+    def metric_dialog_chart_format(format)
+      format == :currency ? :short_currency : format
     end
 
     def metric_dialog_close_icon
@@ -177,7 +185,7 @@ module RailsuiCharts
                   viewBox: "0 0 24 24",
                   fill: "none",
                   stroke: "currentColor",
-                  "stroke-width": 1.5,
+                  "stroke-width": 2,
                   aria: { hidden: true })
     end
 

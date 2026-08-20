@@ -89,7 +89,11 @@ class ChartHelperTest < Minitest::Test
     # A button, not a link — it goes nowhere.
     assert_includes html, "<button"
     assert_includes html, "&quot;height&quot;:420"
-    assert_includes html, "&quot;right&quot;:48"
+    assert_includes html, "&quot;format&quot;:&quot;short_currency&quot;"
+    assert_includes html, "&quot;minWidth&quot;:48"
+    assert_includes html, "&quot;maxWidth&quot;:72"
+    assert_includes html, "&quot;offsetX&quot;:4"
+    assert_includes html, "&quot;right&quot;:72"
   end
 
   def test_expanding_needs_something_to_expand
