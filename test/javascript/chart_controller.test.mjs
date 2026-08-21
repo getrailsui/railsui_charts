@@ -251,6 +251,55 @@ describe("applyTooltip on labelled point charts", () => {
   })
 })
 
+describe("applyTooltip on complex point charts", () => {
+  const render = (options, payload) => controller().applyTooltip(options).tooltip.custom(payload)
+
+  test("candlesticks label each OHLC value", () => {
+    const options = {
+      chart: { type: "candlestick" },
+      format: "currency",
+      series: [{ name: "ACME", data: [{ x: "Aug 1", y: [120, 128, 118, 126], v: 24000 }] }]
+    }
+
+    const html = render(options, {
+      series: [[126]],
+      seriesIndex: 0,
+      dataPointIndex: 0,
+      w: { config: { series: options.series }, globals: { labels: ["Aug 1"], colors: ["#6366f1"], seriesNames: ["ACME"] } }
+    })
+
+    assert.match(html, /Open/)
+    assert.match(html, /\$120/)
+    assert.match(html, /High/)
+    assert.match(html, /\$128/)
+    assert.match(html, /Low/)
+    assert.match(html, /Close/)
+    assert.match(html, /Volume/)
+    assert.match(html, /24K/)
+  })
+
+  test("box plots use five-number labels", () => {
+    const options = {
+      chart: { type: "boxPlot" },
+      format: "number",
+      series: [{ name: "Latency", data: [{ x: "API", y: [120, 180, 220, 280, 420] }] }]
+    }
+
+    const html = render(options, {
+      series: [[220]],
+      seriesIndex: 0,
+      dataPointIndex: 0,
+      w: { config: { series: options.series }, globals: { labels: ["API"], colors: ["#6366f1"], seriesNames: ["Latency"] } }
+    })
+
+    assert.match(html, /Min/)
+    assert.match(html, /Q1/)
+    assert.match(html, /Median/)
+    assert.match(html, /Q3/)
+    assert.match(html, /Max/)
+  })
+})
+
 describe("resolveCssVariable", () => {
   const withComputed = (value) => {
     const instance = controller()

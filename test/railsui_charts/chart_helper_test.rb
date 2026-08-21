@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "cgi"
+require "json"
 require "test_helper"
 
 class ChartHelperTest < Minitest::Test
@@ -33,6 +35,24 @@ class ChartHelperTest < Minitest::Test
     assert_includes html, "<th>Category</th>"
     assert_includes html, "<th>Revenue</th>"
     assert_includes html, "<td>Jan</td>"
+  end
+
+  def test_accessible_table_aligns_point_series_when_categories_are_absent
+    RailsuiCharts.config.register_type(:range_area, points: :complex)
+
+    html = railsui_chart(
+      [
+        { name: "Range", type: :range_area, data: [{ x: "Aug 2", y: [9, 13] }] },
+        { name: "Actual", type: :line, data: [{ x: "Aug 1", y: 10 }, { x: "Aug 2", y: 12 }] }
+      ],
+      type: :line
+    )
+
+    assert_includes html, "<td>Aug 1</td><td></td><td>10</td>"
+    assert_includes html, "<td>Aug 2</td><td>9, 13</td><td>12</td>"
+  ensure
+    RailsuiCharts.config.complex_point_types.delete(:range_area)
+    RailsuiCharts.config.extra_types.delete(:range_area)
   end
 
   def test_accessible_table_includes_comparison_series
@@ -72,6 +92,10 @@ class ChartHelperTest < Minitest::Test
     # 18450 / 17200 - 1 == 7.27%
     assert_includes html, "+7.27%"
     assert_includes html, "Updated 1 second ago"
+
+    config = chart_options(html)
+    assert_equal true, config.dig("yaxis", "opposite")
+    assert_equal({ "left" => 0, "right" => 4, "top" => 0, "bottom" => 0 }, config.dig("grid", "padding"))
   end
 
   def test_metric_card_can_expand_into_a_larger_view
@@ -107,6 +131,10 @@ class ChartHelperTest < Minitest::Test
 
     # Churn fell, so the negative number is the good outcome.
     assert_includes html, "railsui-metric-delta--positive"
+  end
+
+  def chart_options(html)
+    JSON.parse(CGI.unescapeHTML(html[/data-railsui-chart-options-value="(.*?)"/, 1]))
   end
 
   def test_the_chart_reserves_its_height_before_it_draws

@@ -132,6 +132,12 @@ module RailsuiCharts
       @series.any? { |series| series[:type].present? }
     end
 
+    def complex_combo?
+      combo? && @series.each_with_index.any? do |series, index|
+        RailsuiCharts.config.complex_point_types.include?(series_point_type(series, index))
+      end
+    end
+
     def dual_axis?
       @series.any? { |series| series[:axis] == :right }
     end
@@ -155,6 +161,9 @@ module RailsuiCharts
           normalized = { x: point[:x], y: span_or_value(point), z: point[:z] }
           normalized[:meta] = point[:meta] if point.key?(:meta)
           normalized[:name] = point[:name] if point.key?(:name)
+          normalized[:label] = point[:label] if point.key?(:label)
+          normalized[:v] = point[:v] if point.key?(:v)
+          normalized[:points] = point[:points] if point.key?(:points)
           normalized
         when Array
           { x: point[0], y: point[1], z: point[2] }
@@ -537,18 +546,23 @@ module RailsuiCharts
       return series_values if circular?
 
       plotted = @series.each_with_index.map do |series, index|
-        entry = { name: series[:name] || (index.zero? ? series_label : "Series #{index + 1}"), data: points_for(series[:data]) }
+        point_type = series_point_type(series, index)
+        entry = { name: series[:name] || (index.zero? ? series_label : "Series #{index + 1}"), data: points_for(series[:data], point_type) }
         # Only on a combo. Naming a type on every series of an ordinary chart
         # would override the chart-level one and quietly ignore `type:`.
-        entry[:type] = series_type(series, index) if combo?
+        entry[:type] = apex_type_for(point_type) if combo?
         entry
       end
 
       comparing? ? plotted + [{ name: compare_label, data: @compare.map { |point| point[:y] } }] : plotted
     end
 
-    def points_for(points)
-      case @type
+    def series_point_type(series, index)
+      (series[:type] || (index.zero? ? @type : @series.first[:type]) || @type).to_sym
+    end
+
+    def points_for(points, point_type = @type)
+      case point_type
       when :scatter then points.map { |point| [point[:x], point[:y]] }
       when :bubble then points.map { |point| { x: point[:x], y: point[:y], z: point[:z] || 1 } }
       when :range_bar
@@ -563,14 +577,23 @@ module RailsuiCharts
       else
         # A registered type may draw its own labels rather than read them off an
         # axis, in which case flattening the point to a value loses them.
-        return points.map { |point| { x: point[:x], y: point[:y] } } if labelled_points?
+        return points.map { |point| preserved_point(point) } if preserved_points?(point_type) || preserve_combo_points?(points)
 
         points.map { |point| point[:y] }
       end
     end
 
-    def labelled_points?
-      RailsuiCharts.config.labelled_point_types.include?(@type)
+    def preserve_combo_points?(points)
+      complex_combo? && points.any? { |point| point[:x].present? }
+    end
+
+    def preserved_points?(type)
+      RailsuiCharts.config.labelled_point_types.include?(type) ||
+        RailsuiCharts.config.complex_point_types.include?(type)
+    end
+
+    def preserved_point(point)
+      point.slice(:x, :y, :z, :meta, :name, :label, :v, :points).compact
     end
 
     # Apex plots a range against a time axis in milliseconds. Handing it a Time
@@ -599,7 +622,7 @@ module RailsuiCharts
       return { labels: { show: false } } if circular?
       return numeric_axis(:x) if numeric_xaxis?
 
-      {
+      options = {
         categories: axis_categories,
         labels: {
           show: categories.any? && !sparkline?,
@@ -617,6 +640,9 @@ module RailsuiCharts
         tooltip: { enabled: false },
         type: "category"
       }
+
+      options = options.except(:categories) if complex_combo?
+      options
     end
 
     # Scatter and bubble plot real x values. Handing Apex a `categories` array
@@ -781,10 +807,10 @@ module RailsuiCharts
       timeline? || @type == :bar
     end
 
-    # Two scales, so the axis is coloured like its series. One scale keeps the
-    # quiet neutral: there is nothing to tell apart.
-    def axis_ink(index)
-      resolve_var(categorical_palette[index] || config_color(:text))
+    # Series colour belongs to the marks and legend. Keep both scales neutral
+    # so the numbers stay readable and do not compete with the data.
+    def axis_ink(_index)
+      config_color(:text)
     end
 
     # Both sides fitted to their own values, then cut into the same number of
@@ -848,7 +874,7 @@ module RailsuiCharts
 
     def axis_values(side)
       values = @series.select { |series| axis_side(series) == side }
-                      .flat_map { |series| series[:data].map { |point| point[:y] } }
+                      .flat_map { |series| series[:data].flat_map { |point| Array(point[:y]) } }
       # A column grows from a baseline, so its scale has to contain one. A line
       # can float, and forcing zero on a churn rate hovering near 3% would
       # flatten it against the top of the plot.
@@ -986,7 +1012,13 @@ module RailsuiCharts
       # A mixed chart takes its shape from each series, and Apex wants the
       # chart-level type to be "line" while they do — set to "bar" it draws
       # every series as bars whatever they asked for.
-      return "line" if combo?
+      if combo?
+        complex = @series.map.with_index { |series, index| series_point_type(series, index) }
+                         .find { |type| RailsuiCharts.config.complex_point_types.include?(type) }
+        return apex_type_for(complex) if complex
+
+        return "line"
+      end
 
       apex_type_for(@type)
     end
@@ -995,6 +1027,8 @@ module RailsuiCharts
       case type&.to_sym
       when :sparkline then "line"
       when :range_bar then "rangeBar"
+      when :range_area then "rangeArea"
+      when :box_plot then "boxPlot"
       when :column, :bar then "bar"
       when :donut then "donut"
       when :polar_area then "polarArea"

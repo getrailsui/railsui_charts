@@ -141,6 +141,9 @@ var railsui_chart_controller_default = class extends Controller {
     const configuredSeries = w.config?.series?.[seriesIndex] || options.series?.[seriesIndex] || {};
     const point = this.configuredPoint(options, w, seriesIndex, dataPointIndex) || {};
     const title = point.name || point.label || point.x || configuredSeries.name;
+    if (Array.isArray(point.y)) {
+      return this.arrayPointTooltipMarkup(point, configuredSeries, options, w, seriesIndex, dataPointIndex, format);
+    }
     const row = {
       label: configuredSeries.name || "Value",
       value: point.y ?? series?.[seriesIndex]?.[dataPointIndex],
@@ -148,6 +151,31 @@ var railsui_chart_controller_default = class extends Controller {
       format: null
     };
     return this.tooltipMarkup(title, [row], null, format);
+  }
+  arrayPointTooltipMarkup(point, configuredSeries, options, w, seriesIndex, dataPointIndex, format) {
+    const labels = options.tooltip_value_labels || this.defaultArrayValueLabels(options.chart?.type, point.y.length);
+    const color = this.pointColor(options, w, seriesIndex, dataPointIndex);
+    const rows = point.y.map((value, index) => ({
+      label: labels[index] || `Value ${index + 1}`,
+      value,
+      color,
+      format: null
+    }));
+    if (point.v !== void 0 && point.v !== null) {
+      rows.push({
+        label: options.tooltip_volume_label || "Volume",
+        value: point.v,
+        color,
+        format: this.formatterFor(options.volume_format || "human", options.currency)
+      });
+    }
+    return this.tooltipMarkup(point.name || point.label || point.x || configuredSeries.name, rows, null, format);
+  }
+  defaultArrayValueLabels(type, length) {
+    if (type === "candlestick" && length === 4) return ["Open", "High", "Low", "Close"];
+    if (type === "boxPlot" && length === 5) return ["Min", "Q1", "Median", "Q3", "Max"];
+    if (type === "rangeArea" && length === 2) return ["Low", "High"];
+    return [];
   }
   rangeBarTooltipMarkup({ series, seriesIndex, dataPointIndex, w }, options, format) {
     const configuredSeries = w.config?.series?.[seriesIndex] || options.series?.[seriesIndex] || {};
