@@ -126,10 +126,10 @@ class ComboTest < Minitest::Test
     assert_operator config[:yaxis].first[:min], :>, 0
   end
 
-  def test_each_axis_is_inked_like_the_series_it_measures
+  def test_each_axis_uses_neutral_chart_ink
     colors = combo[:yaxis].map { |axis| axis.dig(:labels, :style, :colors) }
 
-    refute_equal colors[0], colors[1], "both scales look alike and cannot be told apart"
+    assert_equal [RailsuiCharts.config.colors[:text]] * 2, colors
     assert_equal RailsuiCharts.config.series_colors.length, 8
   end
 

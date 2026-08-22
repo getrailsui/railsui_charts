@@ -3,7 +3,7 @@
 module RailsuiCharts
   class Configuration
     attr_accessor :default_height, :default_currency, :colors, :series_colors, :theme_css_prefix, :extra_types
-    attr_accessor :labelled_point_types, :typography, :geometry
+    attr_accessor :labelled_point_types, :complex_point_types, :typography, :geometry
 
     # Categorical hues carry identity, so the order is the colourblind-safety
     # mechanism rather than a style choice — it was picked by validating every
@@ -27,6 +27,7 @@ module RailsuiCharts
       # Chart types registered by an extension, such as Rails UI Charts Pro.
       @extra_types = []
       @labelled_point_types = []
+      @complex_point_types = []
       @theme_css_prefix = "--rui-chart"
       @series_colors = (1..SERIES_COUNT).map { |i| "var(--rui-chart-series-#{i}, #{SERIES_FALLBACKS[i - 1]})" }
       @colors = {
@@ -76,11 +77,16 @@ module RailsuiCharts
     # `points: :labelled` keeps each point as {x:, y:}. Most types put the label
     # on the axis and send bare values, but a treemap draws its labels inside
     # the rectangles, so they have to stay in the data.
+    #
+    # `points: :complex` keeps the whole point too, but for a different reason:
+    # some Apex types put several numbers in one y-value, such as OHLC candles,
+    # box plots, and range areas.
     def register_type(type, points: :values)
       type = type.to_sym
 
       @extra_types |= [type]
       @labelled_point_types |= [type] if points == :labelled
+      @complex_point_types |= [type] if points == :complex
 
       type
     end

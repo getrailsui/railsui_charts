@@ -163,6 +163,16 @@ module RailsuiCharts
       else
         columns = Array(series).map { |s| { name: s[:name] || "Value", data: s[:data] } }
         categories = config.dig(:xaxis, :categories) || []
+
+        if categories.blank?
+          point_categories = accessibility_point_categories(columns)
+          if point_categories.present?
+            categories = point_categories
+            columns = columns.map do |column|
+              column.merge(data: accessibility_align_points(column[:data], categories))
+            end
+          end
+        end
       end
       comparison_categories = config[:compare_categories] || []
 
@@ -202,6 +212,20 @@ module RailsuiCharts
       headers
     end
 
+    def accessibility_point_categories(columns)
+      columns.flat_map do |column|
+        Array(column[:data]).filter_map { |value| value[:x] if value.is_a?(Hash) && value.key?(:x) }
+      end.uniq
+    end
+
+    def accessibility_align_points(data, categories)
+      points = Array(data).each_with_object({}) do |value, indexed|
+        indexed[value[:x]] = value if value.is_a?(Hash) && value.key?(:x)
+      end
+
+      categories.map { |category| points[category] }
+    end
+
     def accessibility_category_cells(categories, comparison_categories, index)
       cells = [content_tag(:td, categories[index] || index + 1)]
       cells << content_tag(:td, comparison_categories[index] || index + 1) if comparison_categories.present?
@@ -215,7 +239,9 @@ module RailsuiCharts
         # A bubble carries three numbers that all mean something here. Anything
         # else keeps its label in the category column already, so repeating it
         # beside the value just reads as "A, 6" to a screen reader.
-        value.key?(:z) ? value.values_at(:x, :y, :z).compact.join(", ") : value[:y]
+        return value.values_at(:x, :y, :z).compact.join(", ") if value.key?(:z)
+
+        cell_value(value[:y])
       else value
       end
     end

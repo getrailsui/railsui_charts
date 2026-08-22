@@ -333,6 +333,77 @@ class ApexOptionsBuilderTest < Minitest::Test
     RailsuiCharts.config.extra_types.delete(:treemap)
   end
 
+  def test_registered_complex_types_keep_array_values_in_the_point
+    RailsuiCharts.config.register_type(:candlestick, points: :complex)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new(
+      [{ x: "2026-08-01", y: [10, 14, 8, 12], v: 1200 }],
+      type: :candlestick
+    ).build
+
+    assert_equal "candlestick", config[:chart][:type]
+    assert_equal [{ x: "2026-08-01", y: [10, 14, 8, 12], v: 1200 }], config[:series].first[:data]
+  ensure
+    RailsuiCharts.config.complex_point_types.delete(:candlestick)
+    RailsuiCharts.config.extra_types.delete(:candlestick)
+  end
+
+  def test_registered_complex_combo_series_keep_their_own_points
+    RailsuiCharts.config.register_type(:range_area, points: :complex)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new(
+      [
+        { name: "Actual", type: :line, data: [{ x: "Jan", y: 12 }] },
+        { name: "Band", type: :range_area, data: [{ x: "Jan", y: [10, 14] }] }
+      ],
+      type: :line
+    ).build
+
+    assert_equal "rangeArea", config.dig(:chart, :type)
+    assert_equal [{ x: "Jan", y: 12 }], config[:series].first[:data]
+    assert_equal "rangeArea", config[:series].last[:type]
+    assert_equal [{ x: "Jan", y: [10, 14] }], config[:series].last[:data]
+    refute config[:xaxis].key?(:categories)
+  ensure
+    RailsuiCharts.config.complex_point_types.delete(:range_area)
+    RailsuiCharts.config.extra_types.delete(:range_area)
+  end
+
+  def test_dual_axis_scales_can_fit_complex_point_values
+    RailsuiCharts.config.register_type(:candlestick, points: :complex)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new(
+      [
+        { name: "Price", data: [{ x: "Aug 1", y: [10, 14, 8, 12] }] },
+        { name: "Volume", type: :column, axis: :right, data: [{ x: "Aug 1", y: 24_000 }] }
+      ],
+      type: :candlestick
+    ).build
+
+    assert_equal "candlestick", config.dig(:chart, :type)
+    assert_equal "candlestick", config[:series].first[:type]
+    assert_equal({ x: "Aug 1", y: 24_000 }, config[:series].last[:data].first)
+    assert_kind_of Array, config[:yaxis]
+    assert_operator config[:yaxis].first[:max], :>=, 14
+    refute config[:xaxis].key?(:categories)
+  ensure
+    RailsuiCharts.config.complex_point_types.delete(:candlestick)
+    RailsuiCharts.config.extra_types.delete(:candlestick)
+  end
+
+  def test_ruby_type_names_map_to_apex_type_names
+    RailsuiCharts.config.register_type(:box_plot, points: :complex)
+    RailsuiCharts.config.register_type(:range_area, points: :complex)
+
+    assert_equal "boxPlot", RailsuiCharts::ApexOptionsBuilder.new([{ x: "A", y: [1, 2, 3, 4, 5] }], type: :box_plot).build[:chart][:type]
+    assert_equal "rangeArea", RailsuiCharts::ApexOptionsBuilder.new([{ x: "A", y: [1, 5] }], type: :range_area).build[:chart][:type]
+  ensure
+    %i[box_plot range_area].each do |type|
+      RailsuiCharts.config.complex_point_types.delete(type)
+      RailsuiCharts.config.extra_types.delete(type)
+    end
+  end
+
   def test_registering_a_type_leaves_ordinary_ones_flattened
     RailsuiCharts.config.register_type(:sankey)
 

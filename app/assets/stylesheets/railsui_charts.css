@@ -518,6 +518,12 @@
   margin-top: 0.5rem;
 }
 
+.railsui-metric-card__chart .railsui-chart,
+.railsui-metric-card__chart .apexcharts-canvas,
+.railsui-metric-card__chart .apexcharts-svg {
+  overflow: visible !important;
+}
+
 /* Rendered outside the plot so the first and last labels sit flush with the
    card edges. Apex centres them on their data point and clips at the canvas
    edge, which costs either the label's first characters or plot width. */
