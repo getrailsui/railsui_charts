@@ -127,4 +127,52 @@ class MultiSeriesTest < Minitest::Test
   def test_small_multiples_fall_back_to_the_empty_panel
     assert_includes railsui_small_multiples([], type: :area), "railsui-chart-state--empty"
   end
+  def test_series_with_different_labels_share_one_axis
+    # Categories used to come from the first series alone, so any later series
+    # was drawn from position zero: a projection labelled November landed on
+    # January, on top of the history it was supposed to follow.
+    config = RailsuiCharts::ApexOptionsBuilder.new([
+      { name: "Actual", data: [{ x: "Sep", y: 1 }, { x: "Oct", y: 2 }] },
+      { name: "Forecast", data: [{ x: "Nov", y: 3 }] }
+    ], type: :line).build
+
+    assert_equal %w[Sep Oct Nov], config.dig(:xaxis, :categories)
+    assert_equal [1, 2, nil], config[:series][0][:data]
+    assert_equal [nil, nil, 3], config[:series][1][:data]
+  end
+
+  def test_series_sharing_labels_are_left_exactly_as_they_were
+    config = RailsuiCharts::ApexOptionsBuilder.new([
+      { name: "A", data: [{ x: "Sep", y: 1 }, { x: "Oct", y: 2 }] },
+      { name: "B", data: [{ x: "Sep", y: 3 }, { x: "Oct", y: 4 }] }
+    ], type: :line).build
+
+    assert_equal %w[Sep Oct], config.dig(:xaxis, :categories)
+    assert_equal [1, 2], config[:series][0][:data]
+    assert_equal [3, 4], config[:series][1][:data]
+  end
+
+  def test_partly_overlapping_series_line_up_on_the_labels_they_share
+    config = RailsuiCharts::ApexOptionsBuilder.new([
+      { name: "A", data: [{ x: "Sep", y: 1 }, { x: "Oct", y: 2 }] },
+      { name: "B", data: [{ x: "Oct", y: 9 }, { x: "Nov", y: 8 }] }
+    ], type: :line).build
+
+    assert_equal %w[Sep Oct Nov], config.dig(:xaxis, :categories)
+    assert_equal [nil, 9, 8], config[:series][1][:data]
+  end
+
+  def test_an_explicit_axis_decides_the_order_series_are_aligned_to
+    config = RailsuiCharts::ApexOptionsBuilder.new([
+      { name: "Forecast", data: [{ x: "Nov", y: 3 }] },
+      { name: "Actual", data: [{ x: "Sep", y: 1 }, { x: "Oct", y: 2 }] }
+    ], type: :line, categories: %w[Sep Oct Nov]).build
+
+    # Left to first appearance this would read Nov, Sep, Oct — a forecast drawn
+    # before the history it continues.
+    assert_equal %w[Sep Oct Nov], config.dig(:xaxis, :categories)
+    assert_equal [nil, nil, 3], config[:series][0][:data]
+    assert_equal [1, 2, nil], config[:series][1][:data]
+  end
+
 end

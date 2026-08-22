@@ -183,7 +183,47 @@ module RailsuiCharts
     end
 
     def categories
+      return category_union if misaligned_series?
+
       @data.map { |d| d[:x] }.compact
+    end
+
+    # The union of every series' labels, in the order they first appear.
+    #
+    # Categories used to be read off the first series alone, and every later
+    # series was then flattened to bare values and drawn from position zero.
+    # For series that share an x-axis — the ordinary case — that is the same
+    # thing. For series that do not, it silently plotted them in the wrong
+    # place: a projection labelled November landed on January, on top of the
+    # history it was meant to continue.
+    def category_union
+      # A caller who states the axis gets it. Series order decides first
+      # appearance otherwise, and that is not always the reading order: a
+      # forecast draws its band first so it sits behind the lines, which would
+      # otherwise put next November before last January.
+      @category_union ||= Array(@options[:categories]).presence ||
+                          @series.flat_map { |series| series_labels(series) }.uniq
+    end
+
+    # Only when the series genuinely disagree. A series of bare values carries
+    # no labels to align on, and aligning identical label lists would be the
+    # same list — so in both cases nothing changes.
+    def misaligned_series?
+      return @misaligned unless @misaligned.nil?
+
+      @misaligned =
+        if @series.length < 2
+          false
+        elsif @options[:categories].present?
+          @series.all? { |series| series_labels(series).any? }
+        else
+          labels = @series.map { |series| series_labels(series) }
+          labels.none?(&:empty?) && labels.uniq.length > 1
+        end
+    end
+
+    def series_labels(series)
+      Array(series[:data]).filter_map { |point| point[:x] if point.is_a?(Hash) }
     end
 
     # A bare array of values carries no labels, and Apex sizes the x-axis from
@@ -578,9 +618,21 @@ module RailsuiCharts
         # A registered type may draw its own labels rather than read them off an
         # axis, in which case flattening the point to a value loses them.
         return points.map { |point| preserved_point(point) } if preserved_points?(point_type) || preserve_combo_points?(points)
+        return aligned_values(points) if misaligned_series?
 
         points.map { |point| point[:y] }
       end
+    end
+
+    # A slot per shared category, nil where this series has nothing. Apex draws
+    # a nil as a gap, which is what a forecast that begins after the history
+    # ends should look like.
+    def aligned_values(points)
+      lookup = points.each_with_object({}) do |point, memo|
+        memo[point[:x]] = point[:y] if point.is_a?(Hash)
+      end
+
+      category_union.map { |category| lookup[category] }
     end
 
     def preserve_combo_points?(points)
