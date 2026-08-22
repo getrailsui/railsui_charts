@@ -6,6 +6,17 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.2.2]
+
+### Added
+
+- `accessible_table:` on `railsui_chart`, for charts whose series are not the
+  numbers a reader wants. A caller passes `{ headers:, rows: }` and it replaces
+  the table derived from the series. The CSV export in Rails UI Charts Pro is
+  built from that table, so it is corrected by the same option. This is what
+  lets a waterfall describe itself as movement rather than as the invisible
+  plinth it stacks to get the shape drawn.
+
 ### Fixed
 
 - Sparkline charts now use the Rails UI tooltip renderer, so hovered points show
