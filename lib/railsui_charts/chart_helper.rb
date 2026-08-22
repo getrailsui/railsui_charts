@@ -6,6 +6,11 @@ module RailsuiCharts
     CIRCULAR_TYPES = %i[pie donut polar_area radar].freeze
 
     def railsui_chart(data, type: :line, **options)
+      # A chart whose series are not the numbers a reader wants can say so.
+      # Deleted rather than read, so it never reaches the builder and never
+      # gets serialised into the Stimulus value alongside the real config.
+      explicit_table = options.delete(:accessible_table)
+
       # An empty dataset is a normal day one, not an error. Rendering axes
       # around nothing looks like a chart that failed rather than a chart with
       # nothing to show yet.
@@ -14,7 +19,14 @@ module RailsuiCharts
       config = ApexOptionsBuilder.new(data, type: type, **options).build
       id = options[:id] || "rui-chart-#{SecureRandom.hex(4)}"
 
-      table = options[:accessible] != false ? accessibility_table(config, id: id) : nil
+      table =
+        if options[:accessible] == false
+          nil
+        elsif explicit_table.present?
+          explicit_accessibility_table(explicit_table, id: id)
+        else
+          accessibility_table(config, id: id)
+        end
 
       content_tag(:div,
                   id: id,
@@ -152,6 +164,35 @@ module RailsuiCharts
 
     # Every chart ships a visually hidden table so no value is reachable only by
     # hovering a mark.
+    # The table a caller supplied, rather than one derived from the series.
+    #
+    # This is the accessible half of an extension point: a downstream helper
+    # that stacks scaffolding series to get a shape Apex can draw — a waterfall
+    # holding bars at a running total, say — can still tell a screen reader
+    # what the chart means. The CSV export is built from this table too, so it
+    # gets the same correction for free.
+    def explicit_accessibility_table(table, id:)
+      headers = Array(table[:headers] || table["headers"])
+      rows = Array(table[:rows] || table["rows"])
+      return if rows.blank?
+
+      content_tag(:table, class: "sr-only", aria: { label: "Chart data" }) do
+        safe_join([
+          content_tag(:caption, "Data for chart #{id}"),
+          content_tag(:thead) do
+            content_tag(:tr) { safe_join(headers.map { |header| content_tag(:th, header) }) }
+          end,
+          content_tag(:tbody) do
+            safe_join(rows.map do |row|
+              content_tag(:tr) do
+                safe_join(Array(row).map { |cell| content_tag(:td, cell_value(cell)) })
+              end
+            end)
+          end
+        ])
+      end
+    end
+
     def accessibility_table(config, id:)
       series = config[:series]
       return if series.blank?

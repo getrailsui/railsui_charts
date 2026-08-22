@@ -20,6 +20,44 @@ class ChartHelperTest < Minitest::Test
     assert_includes html, '<table class="sr-only"'
   end
 
+  def test_an_explicit_accessible_table_replaces_the_derived_one
+    # Some charts build series a reader should never hear. A waterfall stacks
+    # an invisible plinth to hold each bar at its running total; read aloud,
+    # that is four columns of scaffolding instead of the movement. Downstream
+    # gems need a way to say what the numbers actually are.
+    html = railsui_chart(
+      [{ name: "Base", data: [0, 10] }, { name: "Increase", data: [10, 5] }],
+      type: :column,
+      id: "movement",
+      accessible_table: {
+        headers: ["Category", "Change", "Running total"],
+        rows: [["Start", 10, 10], ["New", 5, 15]]
+      }
+    )
+
+    assert_includes html, "<th>Running total</th>"
+    assert_includes html, "<td>New</td>"
+    assert_includes html, "Data for chart movement"
+    refute_includes html, "<th>Base</th>"
+  end
+
+  def test_an_explicit_accessible_table_stays_out_of_the_chart_config
+    html = railsui_chart([10, 20], type: :line, accessible_table: { headers: %w[A], rows: [[1]] })
+
+    # It would otherwise be serialised into the Stimulus value and shipped to
+    # the browser twice.
+    refute_includes html, "accessible_table"
+  end
+
+  def test_accessible_false_still_wins_over_an_explicit_table
+    html = railsui_chart(
+      [10, 20], type: :line, accessible: false,
+      accessible_table: { headers: %w[A], rows: [[1]] }
+    )
+
+    refute_includes html, "<table"
+  end
+
   def test_renders_metric
     html = railsui_metric(label: "Revenue", value: 1000, change: 12.5, format: :currency)
 
