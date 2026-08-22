@@ -210,4 +210,32 @@ class ComboHelperTest < Minitest::Test
   def test_a_combo_renders_through_the_ordinary_helper
     assert_includes render_combo, 'data-controller="railsui-chart"'
   end
+  def test_a_complex_combo_keeps_an_axis_it_was_given
+    # Apex reads xaxis.categories ahead of everything else. Without one it sets
+    # the axis from the first series alone (Data.js: gl.labels = gl.labels[0]),
+    # so a forecast whose band is drawn first would put next November first and
+    # draw the history on top of it.
+    RailsuiCharts.config.register_type(:range_area, points: :complex)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new([
+      { name: "Range", type: :range_area, data: [{ x: "Nov", y: [3, 5] }] },
+      { name: "Actual", type: :line, data: [{ x: "Sep", y: 1 }, { x: "Oct", y: 2 }] }
+    ], type: :line, categories: %w[Sep Oct Nov]).build
+
+    assert_equal %w[Sep Oct Nov], config.dig(:xaxis, :categories)
+  end
+
+  def test_a_complex_combo_still_derives_no_axis_of_its_own
+    RailsuiCharts.config.register_type(:range_area, points: :complex)
+
+    config = RailsuiCharts::ApexOptionsBuilder.new([
+      { name: "Range", type: :range_area, data: [{ x: "Nov", y: [3, 5] }] },
+      { name: "Actual", type: :line, data: [{ x: "Sep", y: 1 }] }
+    ], type: :line).build
+
+    # Handing Apex a derived list alongside numeric pair data makes it plot
+    # nothing at all, so absent an explicit axis there is still none.
+    assert_nil config.dig(:xaxis, :categories)
+  end
+
 end

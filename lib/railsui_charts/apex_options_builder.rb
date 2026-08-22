@@ -693,7 +693,12 @@ module RailsuiCharts
         type: "category"
       }
 
-      options = options.except(:categories) if complex_combo?
+      # A complex combo carries its own x in every point, and a derived category
+      # list alongside numeric pair data makes Apex plot nothing. An explicit
+      # one is different: Apex reads xaxis.categories ahead of everything else,
+      # and without it a combo takes its whole axis from the first series alone
+      # — which draws every other series from position zero.
+      options = options.except(:categories) if complex_combo? && @options[:categories].blank?
       options
     end
 
