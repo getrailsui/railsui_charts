@@ -158,14 +158,14 @@ var railsui_chart_controller_default = class extends Controller {
     const rows = point.y.map((value, index) => ({
       label: labels[index] || `Value ${index + 1}`,
       value,
-      color,
+      color: options.tooltip_value_colors?.[index] || color,
       format: null
     }));
     if (point.v !== void 0 && point.v !== null) {
       rows.push({
         label: options.tooltip_volume_label || "Volume",
         value: point.v,
-        color,
+        color: options.tooltip_volume_color || color,
         format: this.formatterFor(options.volume_format || "human", options.currency)
       });
     }
