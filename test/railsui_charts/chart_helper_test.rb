@@ -17,7 +17,10 @@ class ChartHelperTest < Minitest::Test
     html = railsui_chart([10, 20], type: :line, id: "revenue")
 
     assert_includes html, "Data for chart revenue"
-    assert_includes html, '<table class="sr-only"'
+    # The gem hides the table itself; `sr-only` rides along for apps that
+    # already style it. Tailwind's version cannot do the job alone — a table
+    # ignores the 1px width it sets and lays out full size.
+    assert_includes html, '<table class="railsui-chart-data-table sr-only"'
   end
 
   def test_an_explicit_accessible_table_replaces_the_derived_one
