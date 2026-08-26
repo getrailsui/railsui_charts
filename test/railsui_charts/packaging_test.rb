@@ -2,6 +2,7 @@
 
 require "test_helper"
 require "json"
+require "tmpdir"
 
 # The gem ships its JavaScript two ways — an npm package for bundled apps and a
 # prebuilt file for importmap apps — and both have to describe the same version
@@ -63,12 +64,48 @@ class PackagingTest < Minitest::Test
 
   # A stale build is the failure this whole release exists to prevent, one step
   # further along: the gem updates, the file served to importmap apps does not.
-  def test_the_build_is_not_older_than_the_controllers
-    sources = Dir[File.join(ROOT, "app/javascript/**/*.js")].reject { |f| f == BUNDLE }
-    newest = sources.map { |f| File.mtime(f) }.max
+  #
+  # Checked by rebuilding and comparing bytes, rather than by comparing mtimes
+  # as this once did. Git does not record mtime — every file in a fresh clone
+  # carries the time of the checkout — so the old assertion said nothing on CI
+  # or on any machine that had just cloned, which is to say wherever it would
+  # have mattered. Skipped rather than failed where esbuild is absent, so a
+  # Ruby-only contributor can still run the suite; CI installs it.
+  def test_the_build_matches_the_controllers
+    esbuild = File.join(ROOT, "node_modules/.bin/esbuild")
+    skip "esbuild is not installed — run `yarn install`" unless File.executable?(esbuild)
 
-    assert File.mtime(BUNDLE) >= newest,
-      "app/assets/javascripts/railsui_charts.js is older than the controllers — run `yarn build`"
+    Dir.mktmpdir do |dir|
+      rebuilt = File.join(dir, "railsui_charts.js")
+      ok = system(
+        esbuild, File.join(ROOT, "app/javascript/railsui_charts/index.js"),
+        "--bundle", "--format=esm",
+        "--external:@hotwired/stimulus", "--external:apexcharts",
+        "--outfile=#{rebuilt}",
+        out: File::NULL, err: File::NULL
+      )
+      assert ok, "esbuild failed to rebuild the bundle"
+
+      assert_equal File.read(rebuilt), File.read(BUNDLE),
+        "app/assets/javascripts/railsui_charts.js does not match the controllers — run `yarn build`"
+    end
+  end
+
+  # The stylesheet has two ways in: the asset pipeline, for every application,
+  # and this export, for one that would rather pull it into its own Tailwind
+  # build. The export is the fragile one — nothing at runtime notices a package
+  # subpath that stops resolving, and the symptom is unstyled charts.
+  def test_the_stylesheet_is_exported_from_the_package
+    target = package.dig("exports", "./styles.css")
+
+    refute_nil target, "the package must export ./styles.css for Tailwind applications"
+    assert File.exist?(File.join(ROOT, target)),
+      "./styles.css exports #{target}, which the repository does not have"
+  end
+
+  def test_the_published_package_carries_the_stylesheet
+    assert_includes package["files"], "app/assets/stylesheets",
+      "the stylesheet is exported but would not be published"
   end
 
   def test_the_importmap_pin_names_the_built_file

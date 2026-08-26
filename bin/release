@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cut a release: write the version, commit, tag, build, push to RubyGems.
+# Cut a release: write the version, commit, build, push to RubyGems and npm, tag.
 #
 #   bin/release 0.1.0
 #
@@ -30,12 +30,70 @@ if git rev-parse "v$VERSION" >/dev/null 2>&1; then
   exit 1
 fi
 
-# Checked first: the gem and the npm package go out together, and finding out
-# npm is not authenticated *after* `gem push` leaves a released version with no
+# The CHANGELOG is the only record of what a version contains, and it is written
+# by hand, so nothing but a check here keeps it honest. 0.2.2 shipped two bug
+# fixes it never mentioned.
+if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+  echo "CHANGELOG.md has no '## [$VERSION]' section. Write it first." >&2
+  exit 1
+fi
+
+# Both registries are checked before either is written to. Finding out npm is
+# not authenticated *after* `gem push` leaves a released version with no
 # JavaScript behind it and no way to take the release back.
 if ! npm whoami >/dev/null 2>&1; then
   echo "Not logged in to npm. Run \`npm login\` first." >&2
   exit 1
+fi
+
+# Asked of RubyGems rather than guessed at: the credentials file follows XDG
+# where that is set, so ~/.gem/credentials is the wrong place to look on this
+# machine and on plenty of others.
+if [ -z "${GEM_HOST_API_KEY:-}" ] && ! ruby -e '
+  require "rubygems/config_file"
+  path = Gem.configuration.credentials_path
+  exit(File.exist?(path) && File.read(path).include?("rubygems_api_key") ? 0 : 1)
+' 2>/dev/null; then
+  echo "No RubyGems credentials. Run \`gem signin\` first." >&2
+  exit 1
+fi
+
+# A version already on either registry cannot be replaced, so it is better to
+# stop here than after the commit and the push.
+if [ "$(curl -sS -o /dev/null -w '%{http_code}' \
+        "https://rubygems.org/api/v2/rubygems/railsui_charts/versions/$VERSION.json" || true)" = "200" ]; then
+  echo "railsui_charts $VERSION is already on RubyGems." >&2
+  exit 1
+fi
+
+if npm view "@getrailsui/charts@$VERSION" version >/dev/null 2>&1; then
+  echo "@getrailsui/charts@$VERSION is already on npm." >&2
+  exit 1
+fi
+
+# What is actually about to ship, against what the CHANGELOG claims. These come
+# apart when work lands after the entry is written — the tag goes on HEAD, not
+# on the commit that prepared the notes, and the difference ships undocumented.
+PREVIOUS=$(git describe --tags --abbrev=0 2>/dev/null || true)
+echo "==> Releasing $VERSION"
+echo
+if [ -n "$PREVIOUS" ]; then
+  echo "Commits since $PREVIOUS:"
+  git log --oneline "$PREVIOUS..HEAD" | sed 's/^/    /'
+else
+  echo "First release."
+fi
+echo
+echo "CHANGELOG says:"
+awk "/^## \[$VERSION\]/{f=1;next} /^## \[/{f=0} f" CHANGELOG.md | sed 's/^/    /'
+echo
+
+if [ "${RELEASE_YES:-}" != "1" ]; then
+  read -r -p "Does the CHANGELOG cover every commit above? [y/N] " reply
+  case "$reply" in
+    [yY]*) ;;
+    *) echo "Stopped." >&2; exit 1 ;;
+  esac
 fi
 
 echo "==> Tests"
@@ -54,6 +112,12 @@ echo "==> Build the importmap bundle"
 # and a stale one is a fix that ships to npm and not to them.
 yarn build
 
+# Again, against the built artifact this time. The packaging test rebuilds and
+# compares, so this is what catches a bundle that did not come out of the
+# sources the gem is about to ship.
+echo "==> Verify the package"
+bundle exec ruby -Itest -Ilib test/railsui_charts/packaging_test.rb
+
 git add Gemfile.lock lib/railsui_charts/version.rb CHANGELOG.md \
         package.json yarn.lock app/assets/javascripts/railsui_charts.js
 
@@ -67,8 +131,6 @@ else
 fi
 
 git push
-git tag "v$VERSION"
-git push --tags
 
 echo "==> Build and push"
 gem build railsui_charts.gemspec
@@ -79,5 +141,12 @@ echo "==> npm publish"
 # --access public because a scoped package is private by default, and the first
 # publish of @getrailsui/charts would otherwise land where nobody can install it.
 npm publish --access public
+
+# Tagged last, so a tag means a version that reached both registries. Tagging
+# before the pushes left v0.2.2 pointing at a release that might not have
+# happened, and pointing at whichever commit HEAD had reached by then.
+echo "==> Tag"
+git tag "v$VERSION"
+git push --tags
 
 echo "==> Published railsui_charts $VERSION (gem and @getrailsui/charts)"

@@ -110,6 +110,51 @@
   width: 100%;
 }
 
+/* ------------------------------------------------------------- chart data */
+
+/* The table behind every chart: out of sight, still in the accessibility tree,
+   so no value is reachable only by hovering a mark.
+ *
+ * Hidden here rather than by borrowing the host's `sr-only`, for two reasons.
+ * An app that is not running Tailwind has no such class, and the table renders
+ * at full size in the middle of the page. And even where it exists, `sr-only`
+ * does not hide a table: it shrinks an element to 1px and clips the rest, but
+ * width is only a suggestion to a table box, which CSS never sizes below its
+ * min-content width. The hidden table lays out at its full width, and since it
+ * is positioned, it pushes the page's scroll width past the viewport — which
+ * on a phone reads as the whole page sliding sideways.
+ *
+ * Fixed layout is what makes the 1px stick. The caption needs the same
+ * treatment for the same reason: left in flow, its own min-content width holds
+ * the table open on its own. Neither is removed from the accessibility tree.
+ *
+ * The height stays at the table's own — that one is a minimum a table will not
+ * go under either, and `contain` does not apply to a table box. It costs
+ * nothing: the element is out of flow, and a page carrying a chart is taller
+ * than the table under it. Collapsing it would take `display: block`, which
+ * throws away the table semantics this element exists for. */
+.railsui-chart-data-table {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+  table-layout: fixed;
+}
+
+.railsui-chart-data-table > caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 /* -------------------------------------------------------- small multiples */
 
 .railsui-small-multiples {

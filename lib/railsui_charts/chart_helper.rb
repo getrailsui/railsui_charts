@@ -163,7 +163,11 @@ module RailsuiCharts
     end
 
     # Every chart ships a visually hidden table so no value is reachable only by
-    # hovering a mark.
+    # hovering a mark. The hiding is the gem's own — `sr-only` rides along for
+    # apps that already style it, but a host utility cannot be relied on to
+    # exist, and Tailwind's does not actually hide a table. See
+    # railsui-chart-data-table in the stylesheet.
+    #
     # The table a caller supplied, rather than one derived from the series.
     #
     # This is the accessible half of an extension point: a downstream helper
@@ -176,7 +180,7 @@ module RailsuiCharts
       rows = Array(table[:rows] || table["rows"])
       return if rows.blank?
 
-      content_tag(:table, class: "sr-only", aria: { label: "Chart data" }) do
+      content_tag(:table, class: "railsui-chart-data-table sr-only", aria: { label: "Chart data" }) do
         safe_join([
           content_tag(:caption, "Data for chart #{id}"),
           content_tag(:thead) do
@@ -220,7 +224,7 @@ module RailsuiCharts
       rows = columns.first&.dig(:data)
       return if rows.blank?
 
-      content_tag(:table, class: "sr-only", aria: { label: "Chart data" }) do
+      content_tag(:table, class: "railsui-chart-data-table sr-only", aria: { label: "Chart data" }) do
         safe_join([
           content_tag(:caption, "Data for chart #{id}"),
           content_tag(:thead) do
