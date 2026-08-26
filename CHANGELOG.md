@@ -6,6 +6,8 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+## [0.2.3]
+
 ### Fixed
 
 - The installer no longer writes a stylesheet import that cannot resolve. From
@@ -184,7 +186,8 @@ First release.
   reachable only by hovering a mark
 - Animation stops when the reader has asked for reduced motion
 
-[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/getrailsui/railsui_charts/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/getrailsui/railsui_charts/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/getrailsui/railsui_charts/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/getrailsui/railsui_charts/compare/v0.1.2...v0.2.0

@@ -1,6 +1,6 @@
 {
   "name": "@getrailsui/charts",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Rails-native chart components built on ApexCharts. Stimulus controllers for the railsui_charts gem.",
   "author": "Andy Leverenz <railsui@justalever.com>",
   "license": "MIT",
