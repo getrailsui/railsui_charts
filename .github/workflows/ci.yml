@@ -7,18 +7,16 @@ on:
 
 jobs:
   test:
-    name: Ruby ${{ matrix.ruby }}
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        ruby: ["3.2", "3.3", "3.4"]
     steps:
       - uses: actions/checkout@v4
 
+      # One Ruby. The gemspec allows 2.7 and up, so this does not prove the
+      # floor — but nothing here is version-sensitive, and a matrix costs a run
+      # per entry on every push for a result that has never differed.
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby }}
+          ruby-version: "3.4"
           bundler-cache: true
 
       # 22.15 is the floor the JavaScript tests need: test/javascript/stubs.mjs
@@ -32,41 +30,12 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable
 
+      # Covers the importmap bundle too. app/assets/javascripts/railsui_charts.js
+      # is committed, because it is what importmap applications are served
+      # straight out of the gem, and a stale one is a fix that ships to npm and
+      # not to them. The packaging test rebuilds it with esbuild and compares
+      # bytes, which is why there is no separate build-and-diff job.
       - run: bundle exec rake test
-
-  bundle_is_current:
-    name: Importmap bundle matches the controllers
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - run: corepack enable
-      - run: yarn install --immutable
-      - run: yarn build
-
-      # app/assets/javascripts/railsui_charts.js is committed, because it is
-      # what importmap applications are served straight out of the gem. If a
-      # rebuild moves it, the commit is carrying a build that its own sources no
-      # longer produce, and the fix ships to npm and not to importmap.
-      - name: The committed bundle must match a fresh build
-        run: |
-          git diff --exit-code -- app/assets/javascripts/railsui_charts.js \
-            || { echo "::error::Run \`yarn build\` and commit the result."; exit 1; }
-
-  gem:
-    name: Gem builds
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.4"
-          bundler-cache: true
 
       # Catches a gemspec that names a file the repository does not have, which
       # `rake test` never touches and only a release would otherwise discover.
