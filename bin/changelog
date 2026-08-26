@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Promote the [Unreleased] section to a numbered release, and move the links.
+#
+#   bin/changelog 0.2.3            # rewrite CHANGELOG.md
+#   bin/changelog --check 0.2.3    # say what would happen, write nothing
+#
+# This is the step that came apart twice. Entries get written under
+# [Unreleased], the release goes out without the heading being renamed, and the
+# next release relabels the whole block as its own — which is how 0.2.1's four
+# tooltip fixes ended up filed under 0.2.2, and how 0.2.1 came to have no
+# section at all.
+#
+# It deliberately does not write entries. A script cannot know what changed;
+# only that something did. Refusing an empty [Unreleased] is the guard, and
+# promoting a full one is the bookkeeping.
+
+version = nil
+check = false
+file = File.expand_path("../CHANGELOG.md", __dir__)
+
+args = ARGV.dup
+until args.empty?
+  case (arg = args.shift)
+  when "--check" then check = true
+  when "--file" then file = args.shift
+  else version = arg
+  end
+end
+
+abort "Usage: bin/changelog [--check] [--file PATH] VERSION" if version.nil?
+
+text = File.read(file)
+heading = "## [#{version}]"
+
+def section(text, heading)
+  text[/^#{Regexp.escape(heading)}\]?\n(.*?)(?=^## \[|\z)/m, 1].to_s
+end
+
+# Already numbered by hand. Left exactly as it is — someone wrote it that way on
+# purpose, and rewriting it would be the script guessing.
+if text.include?("#{heading}\n")
+  body = section(text, heading)
+  abort "#{heading} exists in #{File.basename(file)} but is empty." if body.strip.empty?
+  puts body.strip
+  exit 0
+end
+
+unreleased = text.match(/^## \[Unreleased\]\n(.*?)(?=^## \[|\z)/m)
+abort "#{File.basename(file)} has no [Unreleased] section to promote." if unreleased.nil?
+
+if unreleased[1].strip.empty?
+  abort "[Unreleased] is empty — write the notes for #{version} before releasing it."
+end
+
+promoted = text.sub(/^## \[Unreleased\]\n/, "## [Unreleased]\n\n#{heading}\n")
+
+# The compare links at the bottom, which stopped being maintained after 0.2.0
+# for the same reason the headings did: nothing was moving them.
+if (link = promoted.match(%r{^\[Unreleased\]: (\S+)/compare/v(\S+)\.\.\.HEAD$}))
+  base, previous = link[1], link[2]
+  promoted = promoted.sub(
+    /^\[Unreleased\]: .*$/,
+    "[Unreleased]: #{base}/compare/v#{version}...HEAD\n" \
+    "[#{version}]: #{base}/compare/v#{previous}...v#{version}"
+  )
+elsif promoted.match?(/^\[Unreleased\]:/)
+  warn "note: [Unreleased] link is not a compare link — left alone."
+end
+
+puts unreleased[1].strip
+exit 0 if check
+
+File.write(file, promoted)
