@@ -6,6 +6,39 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+### Fixed
+
+- The installer no longer writes a stylesheet import that cannot resolve. From
+  0.1.0 through 0.2.2 it appended `@import "../../stylesheets/railsui_charts";`
+  to `app/assets/tailwind/application.css`. Relative to that file the path names
+  `app/stylesheets` — not the application's own `app/assets/stylesheets`, and not
+  the gem's copy, which lives outside the application where no relative path can
+  reach it. Tailwind does not quietly skip an import it cannot resolve; it fails
+  the build. So an application that ran the installer and used Tailwind did not
+  get unstyled charts, it got no stylesheet build at all, and one that did not
+  use Tailwind never received the CSS by any route.
+
+  The stylesheet is now served from the gem through the asset pipeline, which
+  already carried it, and the installer links it in the application layout.
+  Nothing is copied, so `bundle update` moves the CSS the way it already moves
+  the Ruby and the JavaScript. Running `rails g railsui_charts:install` again
+  takes the old import back out.
+
+- Chart data tables are hidden by the gem's own `.railsui-chart-data-table`
+  rather than by the host application's `sr-only`. An application not running
+  Tailwind has no such class, and rendered the table at full size in the middle
+  of the page. Even where it exists it does not hide a table: `width: 1px` is a
+  suggestion a table box ignores, because CSS never sizes one below its
+  min-content width. The table laid out at full width and, being positioned,
+  pushed the page's scroll width past the viewport — which on a phone reads as
+  the whole page sliding sideways. `table-layout: fixed` is what makes the width
+  stick. `sr-only` rides along for applications that already style it.
+
+### Added
+
+- `@getrailsui/charts/styles.css`, for an application that would rather pull the
+  stylesheet into its own Tailwind build than link it separately.
+
 ## [0.2.2]
 
 ### Added
@@ -16,6 +49,23 @@ public API may change between minor versions.
   built from that table, so it is corrected by the same option. This is what
   lets a waterfall describe itself as movement rather than as the invisible
   plinth it stacks to get the shape drawn.
+
+### Fixed
+
+- Series that do not share an x-axis now align to the union of their labels, or
+  to an explicit `categories:` when one is given, since series order is not
+  always reading order. Categories were read off the first series alone and
+  every later series was flattened to bare values from position zero, so a
+  projection labelled November landed on January, on top of the history it was
+  meant to continue. Apex draws the resulting gaps as gaps.
+- A complex combo keeps a `categories:` it was given. Derived lists are still
+  stripped, because one alongside numeric pair data makes Apex plot nothing, but
+  Apex reads `xaxis.categories` ahead of everything else and without one sets the
+  axis from the first series alone. For a forecast that was ruinous: the band is
+  drawn first so it sits behind the lines, so the projection's months became the
+  whole axis and the earlier history disappeared.
+
+## [0.2.1]
 
 ### Fixed
 
@@ -134,7 +184,9 @@ First release.
   reachable only by hovering a mark
 - Animation stops when the reader has asked for reduced motion
 
-[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/getrailsui/railsui_charts/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/getrailsui/railsui_charts/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/getrailsui/railsui_charts/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/getrailsui/railsui_charts/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/getrailsui/railsui_charts/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/getrailsui/railsui_charts/compare/v0.1.0...v0.1.1

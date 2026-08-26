@@ -42,8 +42,31 @@ bundle install
 rails g railsui_charts:install
 ```
 
-The generator adds the stylesheet import. The JavaScript is served from the gem
-rather than copied into your app, so `bundle update` moves all of it.
+The generator links the stylesheet in your layout. Both the CSS and the
+JavaScript are served from the gem rather than copied into your app, so
+`bundle update` moves all of it.
+
+### Stylesheet
+
+The generator adds this to your layout's `<head>`:
+
+```erb
+<%= stylesheet_link_tag "railsui_charts" %>
+```
+
+The engine puts the file on the asset path and precompiles it, so this works on
+Propshaft and on Sprockets without anything further.
+
+If you would rather the CSS went through your own Tailwind build — to control
+where it lands in the cascade, say — install the npm package below and import it
+instead of linking it:
+
+```css
+/* app/assets/tailwind/application.css */
+@import "@getrailsui/charts/styles.css";
+```
+
+Do one or the other, not both.
 
 ### Bundled apps (esbuild, bun, rollup, webpack)
 
@@ -73,6 +96,23 @@ pin "apexcharts", to: "https://esm.sh/apexcharts@3.45.2"
 import { registerRailsuiCharts } from "@getrailsui/charts"
 
 registerRailsuiCharts(application)
+```
+
+### Upgrading from 0.2.2 and earlier
+
+Those versions' installer wrote an `@import` into `app/assets/tailwind/application.css`
+that could never resolve — it named `app/stylesheets`, which is neither your app's
+stylesheets nor the gem's. Tailwind fails the build on an import it cannot find, so
+if you have this line, your CSS build is broken:
+
+```css
+@import "../../stylesheets/railsui_charts";
+```
+
+Running the installer again removes it and links the stylesheet properly:
+
+```bash
+rails g railsui_charts:install
 ```
 
 ### Upgrading from 0.1.x

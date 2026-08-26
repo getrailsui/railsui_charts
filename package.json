@@ -14,15 +14,18 @@
   "module": "app/javascript/railsui_charts/index.js",
   "exports": {
     ".": "./app/javascript/railsui_charts/index.js",
+    "./styles.css": "./app/assets/stylesheets/railsui_charts.css",
     "./controllers/*": "./app/javascript/controllers/*"
   },
   "files": [
     "app/javascript",
     "app/assets/javascripts",
+    "app/assets/stylesheets",
     "README.md",
     "LICENSE.md",
     "CHANGELOG.md"
   ],
+  "packageManager": "yarn@4.11.0",
   "scripts": {
     "build": "esbuild app/javascript/railsui_charts/index.js --bundle --format=esm --external:@hotwired/stimulus --external:apexcharts --outfile=app/assets/javascripts/railsui_charts.js"
   },
