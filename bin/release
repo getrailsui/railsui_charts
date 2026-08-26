@@ -32,9 +32,11 @@ fi
 
 # The CHANGELOG is the only record of what a version contains, and it is written
 # by hand, so nothing but a check here keeps it honest. 0.2.2 shipped two bug
-# fixes it never mentioned.
-if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
-  echo "CHANGELOG.md has no '## [$VERSION]' section. Write it first." >&2
+# fixes it never mentioned, and 0.2.1 shipped four.
+#
+# --check reads it and writes nothing: the notes are wanted now, for the prompt
+# below, but the file should not be touched until the release is going ahead.
+if ! NOTES=$(bin/changelog --check "$VERSION"); then
   exit 1
 fi
 
@@ -84,8 +86,8 @@ else
   echo "First release."
 fi
 echo
-echo "CHANGELOG says:"
-awk "/^## \[$VERSION\]/{f=1;next} /^## \[/{f=0} f" CHANGELOG.md | sed 's/^/    /'
+echo "CHANGELOG for $VERSION:"
+printf '%s\n' "$NOTES" | sed 's/^/    /'
 echo
 
 if [ "${RELEASE_YES:-}" != "1" ]; then
@@ -98,6 +100,13 @@ fi
 
 echo "==> Tests"
 bundle exec rake test
+
+# Now that the release is going ahead: promote [Unreleased] to the number, and
+# move the compare links with it. Doing this by hand is what came apart twice —
+# entries written under [Unreleased], released without the heading being
+# renamed, then relabelled by the next release as its own.
+echo "==> CHANGELOG"
+bin/changelog "$VERSION"
 
 echo "==> Version $VERSION"
 printf '# frozen_string_literal: true\n\nmodule RailsuiCharts\n  VERSION = "%s"\nend\n' "$VERSION" > ./lib/railsui_charts/version.rb
