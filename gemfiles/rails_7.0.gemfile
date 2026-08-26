@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+# The oldest Rails the gemspec claims to support. The main Gemfile resolves to
+# whatever is newest, so without this the `>= 7.0` in the gemspec was a claim
+# nothing ever checked — and it was wrong in the test harness until the output
+# buffer went into test_helper.rb.
+source "https://rubygems.org"
+
+gem "rails", "~> 7.0.0"
+
+gemspec path: ".."
