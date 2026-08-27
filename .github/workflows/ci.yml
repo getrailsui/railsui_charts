@@ -14,7 +14,7 @@ jobs:
       matrix:
         ruby: ["3.2", "3.3", "3.4"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -25,7 +25,7 @@ jobs:
       # satisfies the controllers' bare imports through Node's own module hooks,
       # which are not available before then. Pinned to the floor rather than to
       # the latest so that the floor is what gets proven.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
@@ -39,7 +39,7 @@ jobs:
     env:
       BUNDLE_GEMFILE: gemfiles/rails_7.0.gemfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # One Ruby rather than the matrix, so a failure here means Rails and not
       # Rails-crossed-with-a-Ruby.
@@ -55,9 +55,9 @@ jobs:
     name: Importmap bundle matches the controllers
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
@@ -83,7 +83,7 @@ jobs:
     name: Gem builds
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: ruby/setup-ruby@v1
         with:
