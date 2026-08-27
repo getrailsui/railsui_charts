@@ -6,6 +6,13 @@ public API may change between minor versions.
 
 ## [Unreleased]
 
+### Fixed
+
+- Releases must now start from a clean, current `main` branch and use the Yarn
+  version pinned by the package. A release interrupted after only RubyGems or
+  npm succeeds can be rerun: the published half is verified and skipped while
+  the missing registry and tag are completed.
+
 ## [0.2.3]
 
 ### Fixed
