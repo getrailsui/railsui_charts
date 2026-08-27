@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Cut a release: write the version, commit, build, push to RubyGems and npm, tag.
+# Cut a release: write the version, commit, build, publish, and create its
+# GitHub Release from the CHANGELOG notes.
 #
 #   bin/release 0.1.0
 #
@@ -9,6 +10,7 @@
 set -euo pipefail
 
 VERSION=${1:-}
+TAG="v$VERSION"
 
 if [ -z "$VERSION" ]; then
   echo "Usage: bin/release 0.1.0" >&2
@@ -38,9 +40,36 @@ if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
   exit 1
 fi
 
-if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-  echo "Tag v$VERSION already exists." >&2
+if ! command -v gh >/dev/null 2>&1; then
+  echo "GitHub CLI is required. Install and authenticate \`gh\` first." >&2
   exit 1
+fi
+
+# A failed final API call can leave the registries and tag published without a
+# GitHub Release. Treat that as resumable, but never reuse a version whose tag
+# points at some other commit.
+TAG_PUBLISHED=false
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+  if [ "$(git rev-parse "$TAG^{commit}")" != "$(git rev-parse HEAD)" ]; then
+    echo "Tag $TAG already exists on a different commit." >&2
+    exit 1
+  fi
+  TAG_PUBLISHED=true
+fi
+
+GITHUB_RELEASE_PUBLISHED=false
+if gh release view "$TAG" >/dev/null 2>&1; then
+  GITHUB_RELEASE_PUBLISHED=true
+fi
+
+if [ "$GITHUB_RELEASE_PUBLISHED" != true ] && ! gh auth status >/dev/null 2>&1; then
+  echo "Not logged in to GitHub CLI. Run \`gh auth login\` first." >&2
+  exit 1
+fi
+
+RELEASE_KIND=
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  RELEASE_KIND=--prerelease
 fi
 
 # The CHANGELOG is the only record of what a version contains, and it is written
@@ -174,11 +203,23 @@ else
   npm publish --access public
 fi
 
-# Tagged last, so a tag means a version that reached both registries. Tagging
-# before the pushes left v0.2.2 pointing at a release that might not have
-# happened, and pointing at whichever commit HEAD had reached by then.
-echo "==> Tag"
-git tag "v$VERSION"
-git push --tags
+# The GitHub Release is created last, so its tag means the version reached both
+# registries. `gh release create` creates a missing tag and the release notes in
+# one operation. A rerun can also attach the release to an existing tag left by
+# an interrupted attempt.
+echo "==> GitHub Release"
+if [ "$GITHUB_RELEASE_PUBLISHED" = true ]; then
+  echo "    GitHub Release $TAG already exists; skipping"
+elif [ "$TAG_PUBLISHED" = true ]; then
+  gh release create "$TAG" --verify-tag \
+    ${RELEASE_KIND:+"$RELEASE_KIND"} \
+    --title "Rails UI Charts $TAG" --notes "$NOTES"
+else
+  RELEASE_SHA=$(git rev-parse HEAD)
+  gh release create "$TAG" --target "$RELEASE_SHA" \
+    ${RELEASE_KIND:+"$RELEASE_KIND"} \
+    --title "Rails UI Charts $TAG" --notes "$NOTES"
+  git fetch origin tag "$TAG"
+fi
 
-echo "==> Published railsui_charts $VERSION (gem and @getrailsui/charts)"
+echo "==> Published railsui_charts $VERSION (gem, @getrailsui/charts, and GitHub Release)"

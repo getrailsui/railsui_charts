@@ -12,6 +12,9 @@ public API may change between minor versions.
   version pinned by the package. A release interrupted after only RubyGems or
   npm succeeds can be rerun: the published half is verified and skipped while
   the missing registry and tag are completed.
+- Releases now create a GitHub Release after RubyGems and npm succeed, using the
+  version heading and notes promoted from this changelog. An interrupted final
+  step can be rerun without republishing the package artifacts.
 
 ## [0.2.3]
 
