@@ -25,6 +25,19 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+if [ "$(git branch --show-current)" != "main" ]; then
+  echo "Releases must be cut from main." >&2
+  exit 1
+fi
+
+# A tag on a feature branch is not a release of the default branch consumers
+# install from. Fetch first so an otherwise stale origin/main cannot bless it.
+git fetch origin main --tags
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+  echo "main must match origin/main before releasing. Push or pull first." >&2
+  exit 1
+fi
+
 if git rev-parse "v$VERSION" >/dev/null 2>&1; then
   echo "Tag v$VERSION already exists." >&2
   exit 1
@@ -40,10 +53,25 @@ if ! NOTES=$(bin/changelog --check "$VERSION"); then
   exit 1
 fi
 
-# Both registries are checked before either is written to. Finding out npm is
-# not authenticated *after* `gem push` leaves a released version with no
-# JavaScript behind it and no way to take the release back.
-if ! npm whoami >/dev/null 2>&1; then
+# The two registries cannot be published atomically. Record which one already
+# has the version so a rerun completes a partial release instead of rejecting
+# the one registry that did succeed.
+GEM_PUBLISHED=false
+if [ "$(curl -sS -o /dev/null -w '%{http_code}' \
+        "https://rubygems.org/api/v2/rubygems/railsui_charts/versions/$VERSION.json" || true)" = "200" ]; then
+  GEM_PUBLISHED=true
+fi
+
+NPM_PUBLISHED=false
+if npm view "@getrailsui/charts@$VERSION" version >/dev/null 2>&1; then
+  NPM_PUBLISHED=true
+fi
+
+if [ "$GEM_PUBLISHED" = true ] || [ "$NPM_PUBLISHED" = true ]; then
+  echo "Resuming a partial release: RubyGems=$GEM_PUBLISHED npm=$NPM_PUBLISHED"
+fi
+
+if [ "$NPM_PUBLISHED" != true ] && ! npm whoami >/dev/null 2>&1; then
   echo "Not logged in to npm. Run \`npm login\` first." >&2
   exit 1
 fi
@@ -51,25 +79,12 @@ fi
 # Asked of RubyGems rather than guessed at: the credentials file follows XDG
 # where that is set, so ~/.gem/credentials is the wrong place to look on this
 # machine and on plenty of others.
-if [ -z "${GEM_HOST_API_KEY:-}" ] && ! ruby -e '
+if [ "$GEM_PUBLISHED" != true ] && [ -z "${GEM_HOST_API_KEY:-}" ] && ! ruby -e '
   require "rubygems/config_file"
   path = Gem.configuration.credentials_path
   exit(File.exist?(path) && File.read(path).include?("rubygems_api_key") ? 0 : 1)
 ' 2>/dev/null; then
   echo "No RubyGems credentials. Run \`gem signin\` first." >&2
-  exit 1
-fi
-
-# A version already on either registry cannot be replaced, so it is better to
-# stop here than after the commit and the push.
-if [ "$(curl -sS -o /dev/null -w '%{http_code}' \
-        "https://rubygems.org/api/v2/rubygems/railsui_charts/versions/$VERSION.json" || true)" = "200" ]; then
-  echo "railsui_charts $VERSION is already on RubyGems." >&2
-  exit 1
-fi
-
-if npm view "@getrailsui/charts@$VERSION" version >/dev/null 2>&1; then
-  echo "@getrailsui/charts@$VERSION is already on npm." >&2
   exit 1
 fi
 
@@ -113,13 +128,13 @@ printf '# frozen_string_literal: true\n\nmodule RailsuiCharts\n  VERSION = "%s"\
 # One writer for both, because the packaging test asserts they match and a
 # subscriber reading two different numbers has no way to tell which is right.
 npm pkg set version="$VERSION"
-yarn install --silent
+corepack yarn install --silent
 bundle
 
 echo "==> Build the importmap bundle"
 # Rebuilt every release: this file is what importmap applications are served,
 # and a stale one is a fix that ships to npm and not to them.
-yarn build
+corepack yarn build
 
 # Again, against the built artifact this time. The packaging test rebuilds and
 # compares, so this is what catches a bundle that did not come out of the
@@ -144,12 +159,20 @@ git push
 echo "==> Build and push"
 gem build railsui_charts.gemspec
 trap 'rm -f "railsui_charts-$VERSION.gem"' EXIT
-gem push "railsui_charts-$VERSION.gem" --host https://rubygems.org
+if [ "$GEM_PUBLISHED" = true ]; then
+  echo "    RubyGems already has railsui_charts $VERSION; skipping"
+else
+  gem push "railsui_charts-$VERSION.gem" --host https://rubygems.org
+fi
 
 echo "==> npm publish"
 # --access public because a scoped package is private by default, and the first
 # publish of @getrailsui/charts would otherwise land where nobody can install it.
-npm publish --access public
+if [ "$NPM_PUBLISHED" = true ]; then
+  echo "    npm already has @getrailsui/charts $VERSION; skipping"
+else
+  npm publish --access public
+fi
 
 # Tagged last, so a tag means a version that reached both registries. Tagging
 # before the pushes left v0.2.2 pointing at a release that might not have

@@ -9,10 +9,10 @@ Rake::TestTask.new("test:ruby") do |t|
   t.test_files = FileList["test/**/*_test.rb"]
 end
 
-# No package.json, no node_modules, no test runner dependency: `node --test` is
-# built in, and the only thing it was missing was a way to satisfy the two bare
-# imports the controllers make. test/javascript/stubs.mjs does that with Node's
-# own module hooks, which need Node 22.15 or newer.
+# No test-runner dependency: `node --test` is built in, and the only thing it
+# was missing was a way to satisfy the two bare imports the controllers make.
+# test/javascript/stubs.mjs does that with Node's own module hooks, which need
+# Node 22.15 or newer.
 #
 # Skipped rather than failed when Node is absent, so a Ruby-only contributor
 # can still run the suite.
