@@ -319,6 +319,18 @@ module RailsuiCharts
     end
 
     def mobile_yaxis(current)
+      # A chart with more than one scale carries an axis object per series, and
+      # the whole array has to survive the breakpoint. Handing it to carry_over
+      # would return the bare overrides instead, because an Array is not a Hash
+      # — every seriesName mapping goes with it, and Apex falls back to drawing
+      # all of the series against a single scale. On an OHLC chart that puts
+      # price on the volume axis, where candles in the hundreds against volume
+      # in the tens of thousands flatten into a line on the baseline.
+      #
+      # Each axis is judged on its own, since the tick count below turns on
+      # bounds this axis in particular may have been given.
+      return current.map { |axis| mobile_yaxis(axis) } if current.is_a?(Array)
+
       overrides = { labels: { style: { fontSize: font_size_sm } } }
       # A numeric axis already has bounds picked so its ticks land on round
       # numbers. Forcing a count knocks them back off — 10..70 in four steps

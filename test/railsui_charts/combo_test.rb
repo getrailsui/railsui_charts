@@ -46,6 +46,19 @@ class ComboTest < Minitest::Test
     assert axes[1][:opposite]
   end
 
+  def test_both_scales_survive_the_mobile_breakpoint
+    # The breakpoint used to hand back a single axis object, which drops the
+    # seriesName on each one and leaves Apex drawing every series against one
+    # scale. Two series an order of magnitude apart then read as a flat line.
+    mobile = combo.dig(:responsive, 0, :options, :yaxis)
+
+    assert_kind_of Array, mobile
+    assert_equal ["Revenue", "Churn rate"], mobile.map { |axis| axis[:seriesName] }
+    refute mobile[0][:opposite]
+    assert mobile[1][:opposite]
+    assert_includes mobile.first.dig(:labels, :style, :fontSize), "font-size-sm"
+  end
+
   def test_only_one_ruler_is_drawn_per_side
     # Three series, two of them sharing the left scale. Drawing a second left
     # ruler stacks two identical scales and reads as a fault.
